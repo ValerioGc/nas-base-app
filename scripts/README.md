@@ -46,7 +46,8 @@ await smokeNas([], root, { env: { NAS_STORAGE_ROOT: '/tmp/storage' } });
 ne gestisce errori e arresto. `testNasPackage(args, root?)` accetta gli argomenti del checker senza
 avviare un altro processo Node. `smokeNas(args?, root?, { env? })` aggiunge le variabili come
 `--env`. `extractChangelog(version, root?)`, `verifyRelease(tag?, root?)`, `prepareRelease(root?)`,
-`coverageRust(root?, { failUnderLines? })` e `runSonar(root?)` accettano una root esplicita.
+`coverageRust(root?, { failUnderLines? })` e `runSonar(root?, { rust? })` accettano una root esplicita.
+`rust` resta `true` per le app; `false` salta Clippy per la libreria, come la CLI `sonar --no-rust`.
 `mergeRelease({ type?, branch?, dryRun?, bump?, prepare? })` e `latestTag(root?)` usano Git e
 vanno eseguiti solo per un rilascio vero; `bump` e `prepare` sostituiscono aggiornamento della
 versione e gate per progetti diversi da un'app NAS, come la libreria stessa.

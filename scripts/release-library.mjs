@@ -1,15 +1,15 @@
 // The release of the library itself, with the procedure of the applications: `release:check`,
-// `release:test` and `release:merge`. Only the version of package.json and its changelog move;
+// `release:test` and `release:merge`. Package, lockfile, changelog and Sonar versions move together;
 // the tag pushed by the merge publishes the package to GitHub Packages (publish.yml).
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { addChangelogEntry, extractChangelog } from './pipeline/extract-changelog.cjs';
 import { mergeRelease } from './pipeline/merge_release.mjs';
 import { releasePattern } from './pipeline/release-version.mjs';
 
-/** Writes `newVersion` in package.json, in its lockfile and as a section of the changelog. */
+/** Updates the package, lockfile, changelog and optional Sonar project to `newVersion`. */
 export function bumpLibrary(oldVersion, newVersion, subjects = [], root = process.cwd()) {
   if (!releasePattern.test(newVersion)) throw new Error('Invalid release version');
   const read = (name) => readFileSync(resolve(root, name), 'utf8');
@@ -24,7 +24,18 @@ export function bumpLibrary(oldVersion, newVersion, subjects = [], root = proces
   lock.packages[''].version = newVersion;
   write('package-lock.json', `${JSON.stringify(lock, null, 2)}\n`);
   write('CHANGELOG.txt', addChangelogEntry(read('CHANGELOG.txt'), newVersion, subjects));
-  return ['package.json', 'package-lock.json', 'CHANGELOG.txt'];
+  const files = ['package.json', 'package-lock.json', 'CHANGELOG.txt'];
+  if (existsSync(resolve(root, 'sonar-project.properties'))) {
+    write(
+      'sonar-project.properties',
+      read('sonar-project.properties').replace(
+        /^sonar\.projectVersion=.*$/m,
+        `sonar.projectVersion=${newVersion}`,
+      ),
+    );
+    files.push('sonar-project.properties');
+  }
+  return files;
 }
 
 /** The tag, package.json and the changelog say the same version. */

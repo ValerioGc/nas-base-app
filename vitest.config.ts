@@ -22,7 +22,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json-summary', 'lcov'],
       reportsDirectory: 'coverage',
-      include: ['src/**/*.{ts,vue}'],
+      include: ['src/**/*.{ts,vue}', 'scripts/build/**/*.ts'],
       exclude: ['src/tests/**', 'src/types/**', 'src/styles/style.ts', 'src/**/*.d.ts'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },

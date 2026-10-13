@@ -2,28 +2,31 @@ import { spawnSync } from 'node:child_process';
 import { openSync, closeSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
+import { parseArgs } from 'node:util';
 
-export function runSonar(root = process.cwd()) {
+export function runSonar(root = process.cwd(), { rust = true } = {}) {
   root = resolve(root);
-  const output = openSync(resolve(root, 'backend/clippy-report.json'), 'w');
-  try {
-    const result = spawnSync(
-      'cargo',
-      [
-        'clippy',
-        '--manifest-path',
-        'backend/Cargo.toml',
-        '--all-targets',
-        '--message-format=json',
-        '--',
-        '-D',
-        'warnings',
-      ],
-      { cwd: root, stdio: ['inherit', output, 'inherit'] },
-    );
-    if (result.error || result.status !== 0) throw result.error ?? new Error('Clippy failed');
-  } finally {
-    closeSync(output);
+  if (rust) {
+    const output = openSync(resolve(root, 'backend/clippy-report.json'), 'w');
+    try {
+      const result = spawnSync(
+        'cargo',
+        [
+          'clippy',
+          '--manifest-path',
+          'backend/Cargo.toml',
+          '--all-targets',
+          '--message-format=json',
+          '--',
+          '-D',
+          'warnings',
+        ],
+        { cwd: root, stdio: ['inherit', output, 'inherit'] },
+      );
+      if (result.error || result.status !== 0) throw result.error ?? new Error('Clippy failed');
+    } finally {
+      closeSync(output);
+    }
   }
   const result = spawnSync(
     'podman',
@@ -48,7 +51,8 @@ export function runSonar(root = process.cwd()) {
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    runSonar();
+    const { values } = parseArgs({ options: { 'no-rust': { type: 'boolean', default: false } } });
+    runSonar(process.cwd(), { rust: !values['no-rust'] });
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

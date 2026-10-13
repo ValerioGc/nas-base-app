@@ -1,0 +1,29 @@
+# SonarQube for local analysis. The npm start command reuses an existing sonarqube container;
+# this Compose configuration creates it with stable volume names when none exists.
+name: nas-os
+services:
+  sonarqube:
+    image: docker.io/library/sonarqube:community
+    container_name: 'sonarqube'
+    ports:
+      - '9000:9000'
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: 'true'
+    volumes:
+      - 'nas-os_sonarqube_data:/opt/sonarqube/data'
+      - 'nas-os_sonarqube_extensions:/opt/sonarqube/extensions'
+      - 'nas-os_sonarqube_logs:/opt/sonarqube/logs'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:9000/api/system/status | grep -q UP']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+volumes:
+  'nas-os_sonarqube_data':
+    name: nas-os_sonarqube_data
+  'nas-os_sonarqube_extensions':
+    name: nas-os_sonarqube_extensions
+  'nas-os_sonarqube_logs':
+    name: nas-os_sonarqube_logs

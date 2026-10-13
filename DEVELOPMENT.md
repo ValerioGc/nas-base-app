@@ -89,6 +89,28 @@ Node senza DOM, l'ingresso degli strumenti (`/scripts`), i plugin (`/vite`) e il
 duplicare gli stili condivisi negli SFC che usano soltanto gli helper Sass.
 Non avvia processi NAS e non verifica un launcher reale.
 
+## SonarQube locale
+
+```bash
+pnpm run podman:sonar:up
+export SONAR_TOKEN='<token del progetto nas-base-app>'
+pnpm run test:sonar
+```
+
+La scansione usa `sonar-project.properties` e il server su `http://127.0.0.1:9000`, condiviso con
+le altre repo. `SONAR_HOST_URL` permette di scegliere un server diverso. Il token rimane nella
+variabile d'ambiente; non salvarlo nei file di configurazione.
+
+`test:coverage` genera `coverage/lcov.info` con Vitest per Vue e TypeScript e
+`coverage/scripts.lcov.info` con il test runner Node per gli script. Sonar importa entrambi e
+analizza `src/` e `scripts/`, escludendo i test. La libreria non ha un backend Rust:
+`test:sonar` passa `--no-rust` allo scanner condiviso. La versione Sonar viene aggiornata insieme
+al pacchetto durante `release:merge`.
+
+`podman:sonar:up` avvia il container `sonarqube` esistente, mantenendo il suo database; solo
+quando manca lo crea con Compose. `podman:sonar:logs` segue i log; `podman:sonar:down` ferma
+il server condiviso e conserva il container e i dati per il prossimo avvio.
+
 ## Estensioni successive
 
 L'integrazione su un NAS reale è da provare con le app installate. Chiusura remota e messaggi

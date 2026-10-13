@@ -69,3 +69,16 @@ test('the merge of a library runs its own bump and gate, and a dry run touches n
     process.chdir(previous);
   }
 });
+
+test('a library release keeps the Sonar project version in step with the package', (t) => {
+  const root = library(t);
+  writeFileSync(
+    join(root, 'sonar-project.properties'),
+    'sonar.projectKey=nas-base-app\nsonar.projectVersion=0.1.0\n',
+  );
+  assert.ok(bumpLibrary('0.1.0', '0.1.1', [], root).includes('sonar-project.properties'));
+  assert.equal(
+    readFileSync(join(root, 'sonar-project.properties'), 'utf8'),
+    'sonar.projectKey=nas-base-app\nsonar.projectVersion=0.1.1\n',
+  );
+});

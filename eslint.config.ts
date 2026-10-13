@@ -4,7 +4,9 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['node_modules', 'dist', 'release-assets', 'coverage', '.pnpm-store'] },
+  {
+    ignores: ['node_modules', 'dist', 'release-assets', 'coverage', '.pnpm-store', '.scannerwork'],
+  },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   ...vue.configs['flat/recommended'],
