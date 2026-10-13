@@ -386,7 +386,7 @@ function unpack(args, root) {
   const checksum = readFileSync(args.checksum ?? `${args.archive}.sha256`, 'utf8');
   const match = /^([0-9a-fA-F]{64}) [ *]([^\r\n]+)\r?\n?$/.exec(checksum);
   check(
-    match && match[2] === basename(args.archive),
+    match?.[2] === basename(args.archive),
     'Checksum must use sha256sum format and name this archive',
   );
   const limit = args['max-unpacked-mib'] * 1024 * 1024;
@@ -546,6 +546,22 @@ function htmlAttributes(text) {
   return attributes;
 }
 
+function readHtmlTag(html, start) {
+  let nameEnd = start + 1;
+  while (nameEnd < html.length && /[\w:-]/.test(html[nameEnd])) nameEnd++;
+  return {
+    name: html.slice(start + 1, nameEnd).toLowerCase(),
+    nameEnd,
+    end: tagEnd(html, nameEnd),
+  };
+}
+
+function afterScript(html, start) {
+  const closing = /<\/script\s*>/gi;
+  closing.lastIndex = start;
+  return closing.exec(html) ? closing.lastIndex : html.length;
+}
+
 function* htmlTags(html) {
   let index = 0;
   while (index < html.length) {
@@ -556,19 +572,13 @@ function* htmlTags(html) {
       index = end < 0 ? html.length : end + 3;
       continue;
     }
-    let nameEnd = start + 1;
-    while (nameEnd < html.length && /[\w:-]/.test(html[nameEnd])) nameEnd++;
-    const name = html.slice(start + 1, nameEnd).toLowerCase();
-    const end = tagEnd(html, nameEnd);
+    const { name, nameEnd, end } = readHtmlTag(html, start);
     index = end + 1;
     if (['script', 'img', 'source', 'link'].includes(name)) {
       yield { name, attributes: htmlAttributes(html.slice(nameEnd, end)) };
     }
     if (name === 'script') {
-      const closing = /<\/script\s*>/gi;
-      closing.lastIndex = index;
-      const match = closing.exec(html);
-      index = match ? closing.lastIndex : html.length;
+      index = afterScript(html, index);
     }
   }
 }
