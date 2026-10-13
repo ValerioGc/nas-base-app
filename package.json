@@ -1,6 +1,6 @@
 {
   "name": "@valeriogc/nas-base-app",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Layout Vue e bridge comuni per le applicazioni NAS",
   "type": "module",
   "license": "UNLICENSED",

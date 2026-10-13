@@ -2,7 +2,7 @@
 
 All notable changes to @valeriogc/nas-base-app are documented in this file.
 
-## [Unreleased]
+## [0.1.1]
 
 ### Fixed
 
