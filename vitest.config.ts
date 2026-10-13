@@ -24,7 +24,7 @@ export default defineConfig({
       reportsDirectory: 'coverage',
       include: ['src/**/*.{ts,vue}', 'scripts/build/**/*.ts'],
       exclude: ['src/tests/**', 'src/types/**', 'src/styles/style.ts', 'src/**/*.d.ts'],
-      thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
+      thresholds: { perFile: true, lines: 80, functions: 80, branches: 80, statements: 80 },
     },
   },
 });

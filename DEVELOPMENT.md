@@ -107,6 +107,14 @@ analizza `src/` e `scripts/`, escludendo i test. La libreria non ha un backend R
 `test:sonar` passa `--no-rust` allo scanner condiviso. La versione Sonar viene aggiornata insieme
 al pacchetto durante `release:merge`.
 
+Il coverage deve essere almeno dell'80% per ogni file: linee, funzioni e branch; Vitest verifica
+anche gli statement. La soglia è applicata ai singoli componenti, servizi e script, non soltanto
+alla media del progetto. Il report Node esclude esplicitamente `src/tests/` per includere anche
+i checker il cui nome contiene `test`. `coverage/scripts-summary.json` riporta le percentuali
+per script; un file privo di report fa fallire la verifica. I test degli strumenti usano processi
+simulati e cartelle temporanee; la prova della libreria compila e impacchetta una copia isolata
+dei sorgenti, senza richiedere una build precedente.
+
 `podman:sonar:up` avvia il container `sonarqube` esistente, mantenendo il suo database; solo
 quando manca lo crea con Compose. `podman:sonar:logs` segue i log; `podman:sonar:down` ferma
 il server condiviso e conserva il container e i dati per il prossimo avvio.
