@@ -1,0 +1,129 @@
+@use '../styles/partials/variables' as *;
+
+.app_surface {
+  display: grid;
+  grid-template-columns: $sidebar_width minmax(0, 1fr);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--nas-app-background, var(--nas-background));
+  color: $foreground;
+}
+
+.app_sidebar {
+  box-sizing: border-box;
+  position: sticky;
+  align-self: start;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  padding: $sidebar_padding;
+  background: $surface;
+  display: flex;
+  flex-direction: column;
+  gap: $icon_gap;
+}
+
+.category_navigation {
+  display: grid;
+  gap: $nav_gap;
+}
+
+.category_button {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: $icon_gap;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: $muted;
+  padding: $nav_padding;
+  text-align: start;
+  font: inherit;
+  border-radius: $radius;
+  cursor: pointer;
+
+  &:hover:not(:disabled),
+  &.active {
+    background: $hover;
+    color: $foreground;
+  }
+
+  &.active {
+    box-shadow: inset $active_width 0 $accent;
+  }
+
+  &:focus-visible {
+    outline: $focus_width solid $accent;
+    outline-offset: $focus_offset;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.category_icon {
+  --app-icon-size: #{$icon_size};
+  flex-shrink: 0;
+  width: $icon_size;
+  height: $icon_size;
+}
+
+.close_button {
+  margin-top: auto;
+}
+
+.app_content {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+  max-width: var(--nas-app-content-max-width, none);
+  padding: $content_padding;
+  background: var(--nas-app-content, transparent);
+}
+
+.app_contained {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr);
+
+  .app_content {
+    min-height: 0;
+    overflow: auto;
+  }
+}
+
+@media (max-width: $mobile_breakpoint) {
+  .app_surface {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app_contained {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .app_sidebar {
+    position: static;
+    height: auto;
+    padding: $mobile_padding;
+  }
+
+  .category_navigation {
+    display: flex;
+    overflow-x: auto;
+    padding: $focus_offset;
+  }
+
+  .category_button {
+    width: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .app_content {
+    padding: $mobile_padding;
+  }
+}

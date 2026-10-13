@@ -1,0 +1,4 @@
+// Safe to inject in SFCs: this entry forwards Sass helpers without emitting styles.
+@forward './partials/variables';
+@forward './partials/mixins';
+@forward './partials/placeholders';

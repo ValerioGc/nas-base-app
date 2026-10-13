@@ -1,0 +1,32 @@
+import eslint from '@eslint/js';
+import vue from 'eslint-plugin-vue';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  { ignores: ['node_modules', 'dist', 'release-assets', 'coverage', '.pnpm-store'] },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
+  ...vue.configs['flat/recommended'],
+  {
+    files: ['**/*.{mjs,cjs,ts}'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
+  {
+    files: ['**/*.{ts,vue}'],
+    languageOptions: { globals: globals.browser, parserOptions: { parser: tseslint.parser } },
+    rules: {
+      curly: ['error', 'all'],
+      semi: ['error', 'always'],
+      'vue/multi-word-component-names': 'off',
+      'vue/html-closing-bracket-newline': 'off',
+      'vue/html-indent': 'off',
+      'vue/html-self-closing': 'off',
+      'vue/max-attributes-per-line': 'off',
+      'vue/multiline-html-element-content-newline': 'off',
+      'vue/singleline-html-element-content-newline': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
+);

@@ -1,0 +1,89 @@
+// Icons drawn as images or masks, and the buttons of the applications.
+:root {
+  --app-primary-icon-filter: brightness(0) invert(1);
+  --app-neutral-icon-filter: none;
+}
+
+:root[data-theme='dark'] {
+  --app-primary-icon-filter: brightness(0) invert(0.1);
+  --app-neutral-icon-filter: brightness(0) invert(1);
+}
+
+// The icons are black strokes drawn as images: the filter gives them the colour of the theme, and
+// the primary buttons their own.
+.app_icon {
+  display: inline-block;
+  width: var(--app-icon-size, 1em);
+  height: var(--app-icon-size, 1em);
+  flex: none;
+  object-fit: contain;
+  filter: var(--app-neutral-icon-filter);
+}
+
+.app_button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 15px;
+  border: 1px solid var(--nas-border);
+  border-radius: 8px;
+  background: var(--nas-surface);
+  color: var(--nas-foreground);
+  font-weight: 600;
+  line-height: 1.2;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    filter 0.16s ease;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent, #3c8fbe);
+    background: var(--nas-hover);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  &--primary {
+    border-color: var(--accent, #3c8fbe);
+    background: var(--accent, #3c8fbe);
+    color: var(--on-accent);
+
+    .app_icon {
+      filter: var(--app-primary-icon-filter);
+    }
+
+    .app_icon_mask {
+      filter: none;
+    }
+
+    &:hover:not(:disabled) {
+      background: var(--accent, #3c8fbe);
+      filter: brightness(0.94);
+    }
+  }
+
+  &--icon {
+    width: 40px;
+    min-width: 40px;
+    padding: 8px;
+  }
+
+  &--small {
+    min-height: 32px;
+    padding: 5px 10px;
+    font-size: 0.875rem;
+  }
+}
+
+.app_icon_mask {
+  background: currentColor;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  filter: none;
+}

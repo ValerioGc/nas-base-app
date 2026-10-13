@@ -1,0 +1,78 @@
+// Defaults for standalone apps. Launcher context overrides these tokens inline.
+:root {
+  color-scheme: light;
+  --nas-background: #f5f7f6;
+  --nas-foreground: #172027;
+  --nas-surface: #ffffff;
+  --nas-sunken: #eef3f7;
+  --nas-hover: #dfe9f1;
+  --nas-border: #cbd8e1;
+  --nas-muted: #526776;
+  --nas-accent: #12866f;
+  --accent: var(--nas-accent);
+  // Text on the accent: the surface of the theme, as the launcher's palette sets it.
+  --on-accent: var(--nas-surface);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --nas-background: #172027;
+  --nas-foreground: #f2f7f5;
+  --nas-surface: #131f29;
+  --nas-sunken: #0e1922;
+  --nas-hover: #1c2d3b;
+  --nas-border: #24394a;
+  --nas-muted: #a4b6c3;
+  --nas-accent: #3fd39b;
+}
+
+// Compatibility tokens used by existing NAS app classes.
+:root {
+  --bg: var(--nas-background);
+  --app-bg: var(--nas-background);
+  --text: var(--nas-foreground);
+  --surface: var(--nas-surface);
+  --surface-bg: var(--nas-surface);
+  --surface-soft: var(--nas-sunken);
+  --surface-hover: var(--nas-hover);
+  --surface-border: var(--nas-border);
+  --border: var(--nas-border);
+  --muted: var(--nas-muted);
+  --accent-soft: color-mix(in srgb, var(--accent) 15%, var(--nas-surface));
+  --heading-color: var(--nas-foreground);
+  --card_heading-color: var(--nas-muted);
+  --card_heading-border: var(--nas-border);
+  --refresh-bg: var(--nas-surface);
+  --refresh-color: var(--nas-foreground);
+  --refresh-border: var(--nas-border);
+  --table-heading-bg: var(--nas-sunken);
+  --table-border: var(--nas-border);
+  --chosen-bg: var(--nas-hover);
+  --surface-shadow: transparent;
+  --shadow: none;
+  --tone-error: #b12838;
+  --tone-warning: #a76a13;
+  --tone-info: var(--accent);
+  --tone-success: #28724a;
+  --nas-error: var(--tone-error);
+  --status-bg: color-mix(in srgb, var(--tone-success) 15%, var(--nas-surface));
+  --status-color: var(--tone-success);
+  --status-off-bg: var(--nas-sunken);
+  --status-off-color: var(--nas-muted);
+}
+
+// Keep the iframe canvas transparent while native controls follow the selected theme.
+:root[data-nas-shell='true'][data-theme] {
+  color-scheme: normal;
+  background: transparent;
+  --nas-app-background: color-mix(in srgb, var(--nas-background) 92%, transparent);
+  --nas-app-content: transparent;
+}
+
+:root[data-nas-shell='true'][data-theme='dark'] body {
+  color-scheme: dark;
+}
+
+:root[data-nas-shell='true'][data-theme='light'] body {
+  color-scheme: light;
+}

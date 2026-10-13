@@ -1,0 +1,39 @@
+@use './global' as *;
+
+.nas_page_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $nas_page_header_gap;
+
+  .eyebrow {
+    color: var(--accent);
+    margin: 0 0 $nas_page_header_spacing;
+    text-transform: uppercase;
+    letter-spacing: $nas_page_header_tracking;
+    font-size: $nas_page_header_eyebrow_size;
+    font-weight: $nas_page_header_eyebrow_weight;
+  }
+
+  .subtitle {
+    margin: $nas_page_header_spacing 0 0;
+    color: var(--nas-muted);
+  }
+
+  .header_actions {
+    display: flex;
+    align-items: center;
+    gap: $nas_page_header_spacing;
+  }
+}
+
+@media (max-width: $nas_mobile_breakpoint) {
+  .nas_page_header {
+    align-items: flex-start;
+
+    .header_actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+}

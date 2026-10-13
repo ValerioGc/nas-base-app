@@ -1,0 +1,98 @@
+{
+  "name": "@valeriogc/nas-base-app",
+  "version": "0.1.0",
+  "description": "Layout Vue e bridge comuni per le applicazioni NAS",
+  "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ValerioGc/nas-base-app.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "engines": {
+    "node": ">=24.12.0"
+  },
+  "main": "./dist/nas-base-app.js",
+  "module": "./dist/nas-base-app.js",
+  "types": "./dist/types/index.d.ts",
+  "bin": {
+    "nas-base-app": "./scripts/cli.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/nas-base-app.js"
+    },
+    "./styles.scss": {
+      "types": "./dist/types/styles/style.d.ts",
+      "default": "./dist/styles/main.scss"
+    },
+    "./styles/*": "./dist/styles/*",
+    "./scripts": "./scripts/index.mjs",
+    "./vite": {
+      "types": "./dist/vite/index.d.ts",
+      "import": "./dist/vite/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "scripts",
+    "!scripts/build",
+    "!scripts/package-library.mjs",
+    "!scripts/package-styles.mjs",
+    "!scripts/test-package.mjs",
+    "!scripts/release-library.mjs",
+    "README.md",
+    "DEVELOPMENT.md"
+  ],
+  "sideEffects": [
+    "**/*.scss"
+  ],
+  "scripts": {
+    "build": "npm run type-check && vite build && vue-tsc -p tsconfig.build.json && tsc -p tsconfig.vite.json && node scripts/package-styles.mjs",
+    "type-check": "vue-tsc --noEmit -p tsconfig.json && vue-tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.node.json",
+    "lint": "eslint . && node scripts/npm-lock.mjs --check",
+    "format": "prettier --write . && eslint . --fix && node scripts/format-sfc-spacing.mjs",
+    "format:check": "prettier --check . && node scripts/format-sfc-spacing.mjs --check",
+    "format:sfc": "node scripts/format-sfc-spacing.mjs",
+    "test": "npm run test:unit && npm run test:component",
+    "test:unit": "vitest run --project unit && node --test src/tests/scripts/*.test.mjs",
+    "test:component": "vitest run --project component",
+    "test:coverage": "vitest run --coverage",
+    "check": "npm run format:check && npm run lint && npm run test && npm run build",
+    "lock:npm": "npm install --package-lock-only --ignore-scripts --no-audit --no-fund",
+    "postinstall": "node scripts/npm-lock.mjs --sync",
+    "prepack": "npm run build",
+    "nas:package": "node scripts/package-library.mjs",
+    "nas:test": "node scripts/test-package.mjs",
+    "release:check": "node scripts/release-library.mjs check",
+    "release:test": "node scripts/release-library.mjs test",
+    "release:merge": "node scripts/release-library.mjs merge"
+  },
+  "peerDependencies": {
+    "vue": ">=3.5.0 <4"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.3",
+    "@vitejs/plugin-vue": "6.0.9",
+    "@vitest/coverage-v8": "5.0.2",
+    "@vue/test-utils": "2.5.1",
+    "eslint": "10.11.0",
+    "eslint-plugin-vue": "10.11.1",
+    "globals": "17.12.0",
+    "jiti": "2.7.0",
+    "jsdom": "30.1.1",
+    "prettier": "3.9.9",
+    "sass": "1.105.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.1",
+    "vite": "8.3.1",
+    "vitest": "5.0.2",
+    "vue": "3.5.43",
+    "vue-tsc": "3.3.11"
+  }
+}

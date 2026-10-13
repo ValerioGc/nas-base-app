@@ -1,0 +1,39 @@
+// Only the thumb of the scrollbar: no arrows and no track. Chromium and Safari draw it through the
+// -webkit- pseudo elements, which a standard `scrollbar-width` or `scrollbar-color` would switch
+// off there, so the standard properties go only to the browsers without them (Firefox), whose thin
+// scrollbar has no arrows either.
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-color: var(--border) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--border);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+  background-clip: padding-box;
+}

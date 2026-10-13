@@ -1,0 +1,7 @@
+node_modules/
+dist/
+release-assets/
+coverage/
+pnpm-lock.yaml
+package-lock.json
+**/*.vue

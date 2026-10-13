@@ -1,0 +1,35 @@
+@use './partials/variables' as *;
+
+.nas_confirm_dialog {
+  width: min($nas_confirm_width, calc(100% - $nas_modal_padding * 2));
+  max-width: 100%;
+  max-height: calc(100% - $nas_modal_padding * 2);
+  margin: auto;
+  padding: $nas_confirm_padding;
+  border: 1px solid var(--nas-border);
+  border-radius: $radius;
+  background: $surface;
+  color: $foreground;
+  overflow-wrap: anywhere;
+
+  &::backdrop {
+    background: $nas_modal_backdrop;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: $nas_confirm_title_size;
+  }
+}
+
+.nas_confirm_message {
+  margin: $nas_confirm_message_gap 0 $nas_confirm_padding;
+  color: $muted;
+}
+
+.nas_confirm_actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: $nas_confirm_actions_gap;
+}

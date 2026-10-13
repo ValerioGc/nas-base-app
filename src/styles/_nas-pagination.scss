@@ -1,0 +1,34 @@
+@use './partials/variables' as *;
+
+.nas_pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: $nas_pagination_gap;
+}
+
+.nas_pagination_pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: $nas_pagination_gap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nas_pagination_page {
+  min-width: $nas_pagination_page_size;
+  font-variant-numeric: tabular-nums;
+}
+
+.nas_pagination_gap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: $nas_pagination_page_size;
+  min-height: $nas_pagination_page_size;
+  color: $muted;
+}

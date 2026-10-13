@@ -1,0 +1,47 @@
+# Changelog
+
+All notable changes to @valeriogc/nas-base-app are documented in this file.
+
+## [Unreleased]
+
+### Fixed
+
+- Launcher requests generate UUID v4 identifiers with `crypto.getRandomValues`, including when
+  `crypto.randomUUID` is unavailable. The exported `randomUuid` helper also serves app identifiers.
+
+### Added
+
+- `package` and the archive of the library leave in `release-assets/` only the version just built
+  and the one before it (`pruneAssets`, `compareVersions`): every other file with a version in its
+  name goes, older names of the package included.
+- `.nas_empty_framed` and `.nas_empty_badge` in `_nas-empty-state.scss`: the dashed frame of an
+  empty list and the round badge of its sign, as Cleanup and Sync drew them on their own.
+- `NasShell.openHttps()` sends `open-https`: the launcher loads itself again over HTTPS. The frame
+  guard forbids an application to navigate the page that holds it, so a link with
+  `target="_top"` does nothing.
+
+### Changed
+
+- The scrollbar of `_nas-scrollbar.scss` is only its thumb: no arrows and no track. The standard
+  `scrollbar-width` and `scrollbar-color`, which switch the custom scrollbar off in Chromium, go
+  only to the browsers without the `-webkit-` scrollbar (Firefox).
+- The field of `NasSwitch` has an id of its own (`useId`), so that the browser no longer warns
+  of a form field with neither an id nor a name.
+
+## [0.1.0]
+
+### Added
+
+- Vue components of the NAS applications: layout with categories, page header, native modal and
+  confirmation dialog, empty state, icon, loading state, switch, number stepper and pagination.
+- Bridge of the launcher on the iframe protocol `nas: 1` (`createNasShell`), launcher context with
+  theme, palette and language (`useNasLauncherContext`) and iframe guard (`guardFrame`).
+- Shared helpers: language of an application (`createNasI18n`), documents stored by the backend
+  (`storedDocument`), sizes (`formatBytes`, `share`), schedule texts and power schedule ranges.
+- SCSS theme, reset, layout, controls and component styles, with the Sass variables, mixins and
+  placeholders of the applications.
+- The `nas-base-app` command for the tools of the applications: SFC formatting, npm lockfile,
+  backend in development, NAS package and its checker, smoke test, release check, test and merge,
+  Rust coverage and Sonar. Vite plugins and the purge safelist of the components (`/vite`).
+- Release procedure of the library (`release:check`, `release:test`, `release:merge`) and
+  publication to GitHub Packages from a version tag.

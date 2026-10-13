@@ -1,0 +1,42 @@
+%reset_list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+%text_ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+%fx_center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+%fx_row_center {
+  display: flex;
+  align-items: center;
+}
+
+%fx_between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+%fx_column {
+  display: flex;
+  flex-direction: column;
+}
+
+%grid_center {
+  display: grid;
+  place-items: center;
+}
+
+%nas_muted_text {
+  color: var(--nas-muted);
+}

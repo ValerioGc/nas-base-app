@@ -1,0 +1,53 @@
+@use './partials/variables' as *;
+
+.nas_empty_state {
+  display: grid;
+  justify-items: center;
+  gap: $nas_empty_gap;
+  padding: $nas_empty_padding;
+  text-align: center;
+  overflow-wrap: anywhere;
+
+  h2 {
+    margin: 0;
+    font-size: $nas_empty_title_size;
+  }
+
+  p {
+    max-width: $nas_empty_description_width;
+    margin: 0;
+    color: $muted;
+  }
+}
+
+.nas_empty_icon {
+  --app-icon-size: #{$nas_empty_icon_size};
+  color: $muted;
+}
+
+.nas_empty_actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: $nas_empty_gap;
+}
+
+// A list with nothing to show yet, in a dashed frame apart from the page.
+.nas_empty_framed {
+  min-height: $nas_empty_framed_height;
+  align-content: center;
+  border: 1px dashed var(--nas-border);
+  border-radius: $nas_empty_framed_radius;
+  background: var(--nas-surface);
+}
+
+// The sign of the state in a round badge, for the `icon` slot.
+.nas_empty_badge {
+  --app-icon-size: #{$nas_empty_badge_icon_size};
+  display: grid;
+  place-items: center;
+  width: $nas_empty_badge_size;
+  height: $nas_empty_badge_size;
+  border-radius: 50%;
+  background: var(--nas-hover);
+}

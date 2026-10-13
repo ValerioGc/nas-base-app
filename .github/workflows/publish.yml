@@ -1,0 +1,41 @@
+name: Publish
+
+# A tag vX.Y.Z, pushed by `npm run release:merge`, publishes that version to GitHub Packages after
+# the same gate the release ran locally.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 24
+
+jobs:
+  publish:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+          scope: '@valeriogc'
+      - name: Verify tag, version and changelog
+        run: npm run release:check -- "${GITHUB_REF_NAME}"
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Verify, test, build, pack and check the package
+        run: npm run release:test
+      - name: Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
