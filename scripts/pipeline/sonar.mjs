@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process';
+import { spawnToolSync } from '../process-tools.mjs';
 import { openSync, closeSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
@@ -9,7 +9,7 @@ export function runSonar(root = process.cwd(), { rust = true } = {}) {
   if (rust) {
     const output = openSync(resolve(root, 'backend/clippy-report.json'), 'w');
     try {
-      const result = spawnSync(
+      const result = spawnToolSync(
         'cargo',
         [
           'clippy',
@@ -28,7 +28,7 @@ export function runSonar(root = process.cwd(), { rust = true } = {}) {
       closeSync(output);
     }
   }
-  const result = spawnSync(
+  const result = spawnToolSync(
     'podman',
     [
       'run',

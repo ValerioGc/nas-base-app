@@ -132,6 +132,23 @@ test('copied standalone checker runs app and all HTML assets from unrelated work
   );
 });
 
+test('HTML asset checks handle long boolean attributes, entities, quoted brackets and fake tags', (t) => {
+  const f = fixture(t);
+  const html =
+    '<html><!-- <img src="/missing-comment.png"> -->' +
+    `<script ${'x'.repeat(120000)} title="a > b" src="/app.js?first=1&amp;second=2">` +
+    'const fake = "<img src=/missing-script.png>";</script>' +
+    '<link rel="stylesheet" href=/app.css><img src="https://outside.invalid/image.png"></html>';
+  const original =
+    'body = \'<html><link rel="stylesheet" href="/app.css"><script src="/app.js"></script></html>\';';
+  assert.ok(server.includes(original));
+  f.entries[1].data = server
+    .replace(original, `body = ${JSON.stringify(html)};`)
+    .replace("req.url === '/app.js'", "req.url.split('?')[0] === '/app.js'");
+  f.pack();
+  f.run([], 0, '2 local assets');
+});
+
 test('archive-only does not execute the program', (t) => {
   const f = fixture(t);
 

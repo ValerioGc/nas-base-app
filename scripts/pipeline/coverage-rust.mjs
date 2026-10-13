@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execToolSync } from '../process-tools.mjs';
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -14,7 +14,7 @@ export function coverageRust(root = process.cwd(), { failUnderLines } = {}) {
   }
   mkdirSync(resolve(root, 'backend/coverage'), { recursive: true });
   const report = resolve(root, 'backend/coverage/lcov.info');
-  execFileSync(
+  execToolSync(
     'cargo',
     [
       'llvm-cov',

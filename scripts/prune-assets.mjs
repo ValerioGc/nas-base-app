@@ -7,20 +7,29 @@ import { join } from 'node:path';
 
 // A version in a file name: 1.2.3, or 1.2.3-rc.1. Neither the platform after it nor the extension
 // is part of a pre-release.
-const VERSION =
-  /(?<![\d.])(\d+)\.(\d+)\.(\d+)(?:-(?!linux\b)([0-9A-Za-z]+(?:\.(?!tgz\b|tar\b|pdf\b|sha256\b)[0-9A-Za-z]+)*))?/;
+const VERSION = /(?<![\d.])(\d+)\.(\d+)\.(\d+)/;
+const PRE_RELEASE = /^-(?!linux\b)([0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)/;
+const EXTENSION = /\.(?:tgz|tar|pdf|sha256)\b/;
 
 function parse(text) {
   const match = VERSION.exec(text);
-  return match
-    ? { text: match[0], parts: match.slice(1, 4).map(Number), pre: match[4] ?? null }
-    : null;
+  if (!match) {
+    return null;
+  }
+  const suffix = text.slice(match.index + match[0].length).split(EXTENSION, 1)[0];
+  const pre = PRE_RELEASE.exec(suffix)?.[1] ?? '';
+  return {
+    text: match[0] + (pre ? `-${pre}` : ''),
+    parts: match.slice(1, 4).map(Number),
+    pre,
+  };
 }
 
 /** Orders two versions as semver does: a pre-release comes before its release. */
 export function compareVersions(left, right) {
   const a = parse(left);
   const b = parse(right);
+  if (!a || !b) throw new Error('Invalid release version');
   for (let index = 0; index < 3; index += 1) {
     if (a.parts[index] !== b.parts[index]) {
       return a.parts[index] - b.parts[index];
@@ -29,10 +38,10 @@ export function compareVersions(left, right) {
   if (a.pre === b.pre) {
     return 0;
   }
-  if (a.pre === null) {
+  if (!a.pre) {
     return 1;
   }
-  if (b.pre === null) {
+  if (!b.pre) {
     return -1;
   }
   return a.pre < b.pre ? -1 : 1;

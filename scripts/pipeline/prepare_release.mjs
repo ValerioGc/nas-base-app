@@ -1,9 +1,9 @@
-import { execFileSync } from 'node:child_process';
+import { execToolSync } from '../process-tools.mjs';
 import { pathToFileURL } from 'node:url';
 
 export function prepareRelease(root = process.cwd()) {
-  const npm = (name) => execFileSync('npm', ['run', name], { cwd: root, stdio: 'inherit' });
-  const cargo = (...args) => execFileSync('cargo', args, { cwd: root, stdio: 'inherit' });
+  const npm = (name) => execToolSync('npm', ['run', name], { cwd: root, stdio: 'inherit' });
+  const cargo = (...args) => execToolSync('cargo', args, { cwd: root, stdio: 'inherit' });
   for (const name of [
     'release:check',
     'format:check',

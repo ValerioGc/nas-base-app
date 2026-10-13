@@ -27,7 +27,12 @@ function addChangelogEntry(changelog, version, subjects) {
   }
 
   const entries = subjects
-    .map((subject) => subject.match(/^(\w+)(?:\([^)]*\))?!?:\s*(.+)$/))
+    .map((subject) => {
+      const prefix = /^(\w+)(?:\([^)]*\))?!?:/.exec(subject);
+      if (!prefix) return null;
+      const text = subject.slice(prefix[0].length).trimStart();
+      return text ? [prefix[0], prefix[1], text] : null;
+    })
     .filter((match) => match && !/^(merge )?release v/i.test(match[2]));
   const body = sections
     .map(([title, types]) => {
@@ -48,7 +53,7 @@ function addChangelogEntry(changelog, version, subjects) {
 }
 
 // Run directly, or through the `nas-base-app changelog` command, which loads it as its own.
-if (require.main === module || process.argv[1] === __filename) {
+if (process.argv[1] && require('node:path').resolve(process.argv[1]) === __filename) {
   try {
     if (!process.argv[2]) throw new Error('Usage: node extract-changelog.cjs <version>');
     process.stdout.write(`${extractChangelog(process.argv[2])}\n`);

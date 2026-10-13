@@ -12,23 +12,8 @@
   --accent: var(--nas-accent);
   // Text on the accent: the surface of the theme, as the launcher's palette sets it.
   --on-accent: var(--nas-surface);
-}
 
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --nas-background: #172027;
-  --nas-foreground: #f2f7f5;
-  --nas-surface: #131f29;
-  --nas-sunken: #0e1922;
-  --nas-hover: #1c2d3b;
-  --nas-border: #24394a;
-  --nas-muted: #a4b6c3;
-  --nas-accent: #3fd39b;
-}
-
-// Compatibility tokens used by existing NAS app classes.
-:root {
-  --bg: var(--nas-background);
+  // Compatibility tokens used by existing NAS app classes.  --bg: var(--nas-background);
   --app-bg: var(--nas-background);
   --text: var(--nas-foreground);
   --surface: var(--nas-surface);
@@ -59,6 +44,18 @@
   --status-color: var(--tone-success);
   --status-off-bg: var(--nas-sunken);
   --status-off-color: var(--nas-muted);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --nas-background: #172027;
+  --nas-foreground: #f2f7f5;
+  --nas-surface: #131f29;
+  --nas-sunken: #0e1922;
+  --nas-hover: #1c2d3b;
+  --nas-border: #24394a;
+  --nas-muted: #a4b6c3;
+  --nas-accent: #3fd39b;
 }
 
 // Keep the iframe canvas transparent while native controls follow the selected theme.

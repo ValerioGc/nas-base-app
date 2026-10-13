@@ -122,6 +122,7 @@ test('backend starts from either Cargo layout and accepts the consumer environme
       socket: '/tmp/fixture.sock',
       env: {
         PATH: `${join(root, 'bin')}:${process.env.PATH}`,
+        NAS_CARGO_EXECUTABLE: executable,
         NAS_UI_DIR: 'built-ui',
         FS_EXPLORER_ROOT: '/srv/files',
       },
@@ -150,6 +151,8 @@ test('shared Rust coverage preserves the optional Monitor/Security minimum', (t)
   );
   chmodSync(executable, 0o755);
   const previousPath = process.env.PATH;
+  const previousCargo = process.env.NAS_CARGO_EXECUTABLE;
+  process.env.NAS_CARGO_EXECUTABLE = executable;
   process.env.PATH = `${join(root, 'bin')}:${previousPath}`;
   try {
     coverageRust(root, { failUnderLines: 80 });
@@ -162,6 +165,8 @@ test('shared Rust coverage preserves the optional Monitor/Security minimum', (t)
     assert.throws(() => coverageRust(root, { failUnderLines: 101 }), /between 0 and 100/);
   } finally {
     process.env.PATH = previousPath;
+    if (previousCargo === undefined) delete process.env.NAS_CARGO_EXECUTABLE;
+    else process.env.NAS_CARGO_EXECUTABLE = previousCargo;
   }
 });
 
@@ -192,6 +197,8 @@ test('packaging and release updates support a direct backend crate without Git',
   );
   chmodSync(executable, 0o755);
   const previousPath = process.env.PATH;
+  const previousCargo = process.env.NAS_CARGO_EXECUTABLE;
+  process.env.NAS_CARGO_EXECUTABLE = executable;
   process.env.PATH = `${join(root, 'bin')}:${previousPath}`;
   try {
     const archive = packageNas({ binary: 'bin/sample' }, root);
@@ -221,6 +228,8 @@ test('packaging and release updates support a direct backend crate without Git',
     assert.equal(verifyRelease(undefined, root), '1.2.4');
   } finally {
     process.env.PATH = previousPath;
+    if (previousCargo === undefined) delete process.env.NAS_CARGO_EXECUTABLE;
+    else process.env.NAS_CARGO_EXECUTABLE = previousCargo;
   }
 });
 

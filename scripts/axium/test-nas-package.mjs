@@ -54,15 +54,16 @@ function packagedFile(root, name) {
 }
 
 function octal(buffer) {
-  const text = buffer.toString('ascii').replace(/\0.*$/, '').trim();
+  const text = tarString(buffer, 'ascii').trim();
   check(/^[0-7]*$/.test(text), 'Unsupported or invalid tar numeric field');
   const number = text ? Number.parseInt(text, 8) : 0;
   check(Number.isSafeInteger(number), 'Tar numeric field is too large');
   return number;
 }
 
-function tarString(buffer) {
-  return buffer.toString('utf8').replace(/\0.*$/, '');
+function tarString(buffer, encoding = 'utf8') {
+  const end = buffer.indexOf(0);
+  return buffer.subarray(0, end < 0 ? buffer.length : end).toString(encoding);
 }
 
 function paxFields(body) {
@@ -72,7 +73,7 @@ function paxFields(body) {
     const space = body.indexOf(32, offset);
     check(space > offset, 'Invalid PAX record');
     const lengthText = body.subarray(offset, space).toString('ascii');
-    check(/^[0-9]+$/.test(lengthText), 'Invalid PAX length');
+    check(/^\d+$/.test(lengthText), 'Invalid PAX length');
     const length = Number(lengthText);
     check(
       Number.isSafeInteger(length) &&
@@ -94,6 +95,53 @@ function paxFields(body) {
 
 // Read USTAR/PAX and GNU long-name records before writing anything. Extraction is
 // deliberately implemented with filesystem calls, never a shell or a tar subprocess.
+function tarBlock(data, offset, fields) {
+  const header = data.subarray(offset, offset + 512);
+  const sum = header.reduce(
+    (total, byte, index) => total + (index >= 148 && index < 156 ? 32 : byte),
+    0,
+  );
+  check(sum === octal(header.subarray(148, 156)), 'Invalid tar header checksum');
+  const type = String.fromCodePoint(header[156] || 48);
+  const extension = ['x', 'g', 'L', 'K'].includes(type);
+  const size =
+    !extension && fields.size !== undefined
+      ? Number(fields.size)
+      : octal(header.subarray(124, 136));
+  check(
+    Number.isSafeInteger(size) && size >= 0 && offset + 512 + size <= data.length,
+    'Invalid or truncated tar entry',
+  );
+  return {
+    header,
+    type,
+    body: data.subarray(offset + 512, offset + 512 + size),
+    next: offset + 512 + Math.ceil(size / 512) * 512,
+  };
+}
+
+function tarExtension(type, body) {
+  switch (type) {
+    case 'x':
+    case 'g':
+      return { global: type === 'g', fields: paxFields(body) };
+    case 'L':
+      return { global: false, fields: { path: tarString(body) } };
+    case 'K':
+      return { global: false, fields: { linkpath: tarString(body) } };
+    default:
+      return null;
+  }
+}
+
+function tarEntryName(header, fields) {
+  const prefix =
+    header.subarray(257, 263).toString() === 'ustar\0' ? tarString(header.subarray(345, 500)) : '';
+  return packagePath(
+    fields.path ?? [prefix, tarString(header.subarray(0, 100))].filter(Boolean).join('/'),
+  );
+}
+
 function tarEntries(data) {
   const entries = new Map();
   let globalFields = {};
@@ -110,40 +158,16 @@ function tarEntries(data) {
       terminated = true;
       break;
     }
-    const sum = header.reduce(
-      (total, byte, index) => total + (index >= 148 && index < 156 ? 32 : byte),
-      0,
-    );
-    check(sum === octal(header.subarray(148, 156)), 'Invalid tar header checksum');
-    const type = String.fromCharCode(header[156] || 48);
-    const extension = ['x', 'g', 'L', 'K'].includes(type);
     const fields = { ...globalFields, ...nextFields };
-    const size =
-      !extension && fields.size !== undefined
-        ? Number(fields.size)
-        : octal(header.subarray(124, 136));
-    check(
-      Number.isSafeInteger(size) && size >= 0 && offset + 512 + size <= data.length,
-      'Invalid or truncated tar entry',
-    );
-    const body = data.subarray(offset + 512, offset + 512 + size);
-    offset += 512 + Math.ceil(size / 512) * 512;
-    if (type === 'x' || type === 'g') {
-      if (type === 'g') globalFields = { ...globalFields, ...paxFields(body) };
-      else nextFields = { ...nextFields, ...paxFields(body) };
+    const { type, body, next } = tarBlock(data, offset, fields);
+    offset = next;
+    const extension = tarExtension(type, body);
+    if (extension) {
+      if (extension.global) globalFields = { ...globalFields, ...extension.fields };
+      else nextFields = { ...nextFields, ...extension.fields };
       continue;
     }
-    if (type === 'L' || type === 'K') {
-      nextFields[type === 'L' ? 'path' : 'linkpath'] = tarString(body);
-      continue;
-    }
-    const prefix =
-      header.subarray(257, 263).toString() === 'ustar\0'
-        ? tarString(header.subarray(345, 500))
-        : '';
-    const name = packagePath(
-      fields.path ?? `${prefix ? `${prefix}/` : ''}${tarString(header.subarray(0, 100))}`,
-    );
+    const name = tarEntryName(header, fields);
     const mode = octal(header.subarray(100, 108));
     check(['0', '1', '2', '5'].includes(type), `Unsupported archive entry: ${name}`);
     check(!(mode & 0o6000), `Privileged file mode: ${name}`);
@@ -162,7 +186,7 @@ function tarEntries(data) {
   return entries;
 }
 
-function extract(entries, root) {
+function checkArchiveParents(entries) {
   // No entry may be written underneath a file or link, regardless of archive order.
   for (const { name } of entries.values()) {
     for (let parent = posix.dirname(name); parent !== '.'; parent = posix.dirname(parent)) {
@@ -172,40 +196,50 @@ function extract(entries, root) {
       );
     }
   }
-  function resolveLink(name, depth = 0) {
-    check(depth < 64, 'Cyclic or excessively nested archive link');
-    const resolved = [];
-    const pending = name.split('/');
-    while (pending.length) {
-      const part = pending.shift();
-      if (!part || part === '.') continue;
-      if (part === '..') {
-        check(resolved.length, 'Archive link escapes package');
-        resolved.pop();
-        continue;
-      }
-      resolved.push(part);
-      const entry = entries.get(resolved.join('/'));
-      if (entry && ['1', '2'].includes(entry.type)) {
-        check(
-          entry.target && !/[\\\0]/.test(entry.target) && !posix.isAbsolute(entry.target),
-          `Unsafe archive link: ${entry.name}`,
-        );
-        const base = entry.type === '2' ? resolved.slice(0, -1) : [];
-        return resolveLink([...base, entry.target, ...pending].join('/'), depth + 1);
-      }
+}
+
+function resolveLink(entries, name, depth = 0) {
+  check(depth < 64, 'Cyclic or excessively nested archive link');
+  const resolved = [];
+  const pending = name.split('/');
+  while (pending.length) {
+    const part = pending.shift();
+    if (!part || part === '.') continue;
+    if (part === '..') {
+      check(resolved.length, 'Archive link escapes package');
+      resolved.pop();
+      continue;
     }
-    return resolved.join('/') || '.';
+    resolved.push(part);
+    const entry = entries.get(resolved.join('/'));
+    if (['1', '2'].includes(entry?.type)) {
+      check(
+        entry.target && !/[\\\0]/.test(entry.target) && !posix.isAbsolute(entry.target),
+        `Unsafe archive link: ${entry.name}`,
+      );
+      const base = entry.type === '2' ? resolved.slice(0, -1) : [];
+      return resolveLink(entries, [...base, entry.target, ...pending].join('/'), depth + 1);
+    }
   }
+  return resolved.join('/') || '.';
+}
+
+function archiveLinks(entries) {
   const links = new Map();
   for (const entry of entries.values()) {
     if (['1', '2'].includes(entry.type)) {
-      const target = resolveLink(entry.name);
+      const target = resolveLink(entries, entry.name);
       if (entry.type === '1')
         check(entries.get(target)?.type === '0', `Invalid hardlink target: ${entry.name}`);
       links.set(entry.name, target);
     }
   }
+  return links;
+}
+
+function extract(entries, root) {
+  checkArchiveParents(entries);
+  const links = archiveLinks(entries);
   for (const entry of entries.values()) {
     const destination = join(root, entry.name);
     if (entry.type === '5') mkdirSync(destination, { recursive: true });
@@ -224,22 +258,16 @@ function extract(entries, root) {
   }
 }
 
-function validateManifest(root, args) {
-  check(existsSync(join(root, 'nas-app.json')), 'nas-app.json missing at archive root');
-  const manifest = JSON.parse(readFileSync(packagedFile(root, 'nas-app.json'), 'utf8'));
-  const object = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
-  check(object(manifest), 'Manifest must be a JSON object');
-  // app and run are what the NAS cannot do without: the identity, and the program to execute.
-  for (const field of ['app', 'run']) check(object(manifest[field]), `${field} must be an object`);
-  // The rest is optional, exactly as the launcher reads it, and checked when it is declared.
-  for (const field of ['ui', 'permissions'])
-    check(manifest[field] === undefined || object(manifest[field]), `${field} must be an object`);
-  check(manifest.manifest_version === 1, 'Expected manifest_version 1');
+function object(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function validateIdentity(root, manifest, args) {
   const { id, name, version, icon } = manifest.app;
-  check(typeof id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(id), 'Invalid app.id');
+  check(typeof id === 'string' && /^[A-Za-z\d_-]{1,64}$/.test(id), 'Invalid app.id');
   check(typeof name === 'string' && name.trim(), 'Missing app.name');
   check(
-    typeof version === 'string' && /^[0-9]+(?:\.[0-9]+)*(?:-[0-9A-Za-z.-]+)?$/.test(version),
+    typeof version === 'string' && /^\d+(?:\.\d+)*(?:-[\dA-Za-z.-]+)?$/.test(version),
     'Invalid app.version',
   );
   if (args['expected-id']) check(id === args['expected-id'], 'app.id does not match --expected-id');
@@ -248,9 +276,11 @@ function validateManifest(root, args) {
       version === args['expected-version'].replace(/^v/, ''),
       'app.version does not match --expected-version',
     );
-  const escaped = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = version.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
   check(
-    new RegExp(`(?<![0-9A-Za-z])${escaped}(?![0-9A-Za-z]|\\.[0-9])`).test(basename(args.archive)),
+    new RegExp(String.raw`(?<![\dA-Za-z])${escaped}(?![\dA-Za-z]|\.\d)`).test(
+      basename(args.archive),
+    ),
     'Archive name must carry the manifest version',
   );
   if (args['asset-template'])
@@ -276,6 +306,10 @@ function validateManifest(root, args) {
     manifest.ui?.protocol === undefined || manifest.ui.protocol === 1,
     'Expected ui.protocol 1',
   );
+  return executable;
+}
+
+function validatePermissions(manifest) {
   check(
     manifest.permissions?.paths === undefined ||
       (Array.isArray(manifest.permissions.paths) &&
@@ -295,37 +329,55 @@ function validateManifest(root, args) {
     manifest.permissions?.packages === undefined ||
       (Array.isArray(manifest.permissions.packages) &&
         manifest.permissions.packages.every(
-          (name) => typeof name === 'string' && /^[a-z0-9][a-z0-9+.-]*$/.test(name),
+          (name) => typeof name === 'string' && /^[a-z\d][a-z\d+.-]*$/.test(name),
         )),
     'permissions.packages must contain package names',
   );
+}
+
+function validateCapability(capability) {
+  check(
+    object(capability) && typeof capability.capability === 'string' && capability.capability,
+    'Missing capability name',
+  );
+  check(
+    Number.isInteger(capability.version) && capability.version > 0,
+    'Invalid capability version',
+  );
+  // Only the launcher calls these, so they answer where the proxy serves no browser.
+  const internal = ['mail-events', 'cache', 'trash'].includes(capability.capability);
+  check(
+    typeof capability.endpoint === 'string' &&
+      capability.endpoint.length <= 256 &&
+      /^\/[A-Za-z\d/_.-]*$/.test(capability.endpoint) &&
+      !capability.endpoint.startsWith('//') &&
+      !capability.endpoint.includes('..') &&
+      capability.endpoint !== '/internal' &&
+      capability.endpoint.startsWith('/internal/') === internal,
+    internal
+      ? `The ${capability.capability} endpoint must be under /internal/`
+      : 'Capability endpoints must be public absolute paths',
+  );
+}
+
+function validateManifest(root, args) {
+  check(existsSync(join(root, 'nas-app.json')), 'nas-app.json missing at archive root');
+  const manifest = JSON.parse(readFileSync(packagedFile(root, 'nas-app.json'), 'utf8'));
+  check(object(manifest), 'Manifest must be a JSON object');
+  // app and run are what the NAS cannot do without: the identity, and the program to execute.
+  for (const field of ['app', 'run']) check(object(manifest[field]), `${field} must be an object`);
+  // The rest is optional, exactly as the launcher reads it, and checked when it is declared.
+  for (const field of ['ui', 'permissions'])
+    check(manifest[field] === undefined || object(manifest[field]), `${field} must be an object`);
+  check(manifest.manifest_version === 1, 'Expected manifest_version 1');
+  const executable = validateIdentity(root, manifest, args);
+  validatePermissions(manifest);
   check(
     manifest.provides === undefined || Array.isArray(manifest.provides),
     'provides must be an array',
   );
   for (const capability of manifest.provides ?? []) {
-    check(
-      object(capability) && typeof capability.capability === 'string' && capability.capability,
-      'Missing capability name',
-    );
-    check(
-      Number.isInteger(capability.version) && capability.version > 0,
-      'Invalid capability version',
-    );
-    // Only the launcher calls these, so they answer where the proxy serves no browser.
-    const internal = ['mail-events', 'cache', 'trash'].includes(capability.capability);
-    check(
-      typeof capability.endpoint === 'string' &&
-        capability.endpoint.length <= 256 &&
-        /^\/[A-Za-z0-9/_.-]*$/.test(capability.endpoint) &&
-        !capability.endpoint.startsWith('//') &&
-        !capability.endpoint.includes('..') &&
-        capability.endpoint !== '/internal' &&
-        capability.endpoint.startsWith('/internal/') === internal,
-      internal
-        ? `The ${capability.capability} endpoint must be under /internal/`
-        : 'Capability endpoints must be public absolute paths',
-    );
+    validateCapability(capability);
   }
   return { manifest, executable };
 }
@@ -354,10 +406,10 @@ function unpack(args, root) {
 
 // What the launcher will connect to is a unix socket named after the application; a TCP port is
 // a door around the launcher, so finding one open is a failure and not a detail.
-function checkListener(pid, socket) {
+function processGroup(pid) {
   // The whole process group, not just the child: an application is free to hold its socket in a
   // worker, and a port opened by one would be just as open.
-  const group = readdirSync('/proc').filter((entry) => {
+  return readdirSync('/proc').filter((entry) => {
     if (!/^\d+$/.test(entry)) return false;
     try {
       // The fields after the command, which is in parentheses and may contain spaces itself.
@@ -368,25 +420,29 @@ function checkListener(pid, socket) {
       throw error;
     }
   });
-  check(group.length, 'The application is no longer running');
+}
+
+function processInodes(member) {
   const inodes = new Set();
-  for (const member of group) {
-    let descriptors;
+  let descriptors;
+  try {
+    descriptors = readdirSync(`/proc/${member}/fd`);
+  } catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'EACCES') return inodes;
+    throw error;
+  }
+  for (const descriptor of descriptors) {
     try {
-      descriptors = readdirSync(`/proc/${member}/fd`);
+      const match = /^socket:\[(\d+)\]$/.exec(readlinkSync(`/proc/${member}/fd/${descriptor}`));
+      if (match) inodes.add(match[1]);
     } catch (error) {
-      if (error.code === 'ENOENT' || error.code === 'EACCES') continue;
-      throw error;
-    }
-    for (const descriptor of descriptors) {
-      try {
-        const match = /^socket:\[(\d+)\]$/.exec(readlinkSync(`/proc/${member}/fd/${descriptor}`));
-        if (match) inodes.add(match[1]);
-      } catch (error) {
-        if (error.code !== 'ENOENT') throw error;
-      }
+      if (error.code !== 'ENOENT') throw error;
     }
   }
+  return inodes;
+}
+
+function checkTcpListeners(pid, inodes) {
   for (const table of ['tcp', 'tcp6']) {
     for (const line of readFileSync(`/proc/${pid}/net/${table}`, 'utf8')
       .trim()
@@ -399,6 +455,13 @@ function checkListener(pid, socket) {
       );
     }
   }
+}
+
+function checkListener(pid, socket) {
+  const group = processGroup(pid);
+  check(group.length, 'The application is no longer running');
+  const inodes = new Set(group.flatMap((member) => [...processInodes(member)]));
+  checkTcpListeners(pid, inodes);
   // Num RefCount Protocol Flags Type St Inode Path, and 00010000 is the listening flag.
   const wanted = realpathSync(dirname(socket)) + sep + basename(socket);
   const listening = readFileSync(`/proc/${pid}/net/unix`, 'utf8')
@@ -413,43 +476,117 @@ function checkListener(pid, socket) {
   check(listening, 'The unix socket is not listened on by the declared executable');
 }
 
+function decodeAttribute(value) {
+  return value.replace(/&(?:#(x[\da-f]+|\d+)|amp|quot|apos|lt|gt);/gi, (all, code) => {
+    if (code) {
+      const number =
+        code[0].toLowerCase() === 'x' ? Number.parseInt(code.slice(1), 16) : Number(code);
+      return String.fromCodePoint(number);
+    }
+    return { '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>' }[
+      all.toLowerCase()
+    ];
+  });
+}
+
+function tagEnd(html, start) {
+  let quote = null;
+  for (let index = start; index < html.length; index++) {
+    const char = html[index];
+    if (quote) {
+      if (char === quote) quote = null;
+    } else if (char === '"' || char === "'") {
+      quote = char;
+    } else if (char === '>') {
+      return index;
+    }
+  }
+  return html.length;
+}
+
+function attributeValue(text, start) {
+  const quote = text[start];
+  if (quote === '"' || quote === "'") {
+    const end = text.indexOf(quote, start + 1);
+    return {
+      value: text.slice(start + 1, end < 0 ? text.length : end),
+      next: end < 0 ? text.length : end + 1,
+    };
+  }
+  let end = start;
+  while (end < text.length && !/[\s>]/.test(text[end])) end++;
+  return { value: text.slice(start, end), next: end };
+}
+
+function skipWhitespace(text, start) {
+  let index = start;
+  while (index < text.length && /\s/.test(text[index])) index++;
+  return index;
+}
+
+function htmlAttributes(text) {
+  const attributes = Object.create(null);
+  let index = 0;
+  while (index < text.length) {
+    if (/\s/.test(text[index])) {
+      index++;
+      continue;
+    }
+    const start = index;
+    while (index < text.length && !/[\s=]/.test(text[index])) index++;
+    const name = text.slice(start, index).toLowerCase();
+    index = skipWhitespace(text, index);
+    if (text[index] !== '=') continue;
+    index++;
+    index = skipWhitespace(text, index);
+    const { value, next } = attributeValue(text, index);
+    index = next;
+    if (name) attributes[name] = decodeAttribute(value);
+  }
+  return attributes;
+}
+
+function* htmlTags(html) {
+  let index = 0;
+  while (index < html.length) {
+    const start = html.indexOf('<', index);
+    if (start < 0) return;
+    if (html.startsWith('<!--', start)) {
+      const end = html.indexOf('-->', start + 4);
+      index = end < 0 ? html.length : end + 3;
+      continue;
+    }
+    let nameEnd = start + 1;
+    while (nameEnd < html.length && /[\w:-]/.test(html[nameEnd])) nameEnd++;
+    const name = html.slice(start + 1, nameEnd).toLowerCase();
+    const end = tagEnd(html, nameEnd);
+    index = end + 1;
+    if (['script', 'img', 'source', 'link'].includes(name)) {
+      yield { name, attributes: htmlAttributes(html.slice(nameEnd, end)) };
+    }
+    if (name === 'script') {
+      const closing = /<\/script\s*>/gi;
+      closing.lastIndex = index;
+      const match = closing.exec(html);
+      index = match ? closing.lastIndex : html.length;
+    }
+  }
+}
+
 function htmlAssets(html) {
   const urls = new Set();
-  const decode = (value) =>
-    value.replace(/&(?:#(x[0-9a-f]+|[0-9]+)|amp|quot|apos|lt|gt);/gi, (all, code) => {
-      if (code)
-        return String.fromCodePoint(
-          code[0].toLowerCase() === 'x' ? Number.parseInt(code.slice(1), 16) : Number(code),
-        );
-      return { '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>' }[
-        all.toLowerCase()
-      ];
-    });
-  // Ignore comments and script contents, which can contain strings resembling tags.
-  const markup = html
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/(<script\b(?:[^>"']|"[^"]*"|'[^']*')*>)[\s\S]*?<\/script\s*>/gi, '$1</script>');
-  for (const match of markup.matchAll(
-    /<(script|img|source|link)\b((?:[^>"']|"[^"]*"|'[^']*')*)>/gi,
-  )) {
-    const attributes = Object.fromEntries(
-      [...match[2].matchAll(/([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)].map(
-        (attribute) => [
-          attribute[1].toLowerCase(),
-          decode(attribute[2] ?? attribute[3] ?? attribute[4]),
-        ],
-      ),
-    );
-    if (match[1].toLowerCase() !== 'link' && attributes.src) urls.add(attributes.src);
+  for (const { name, attributes } of htmlTags(html)) {
+    if (name !== 'link' && attributes.src) urls.add(attributes.src);
     if (
-      match[1].toLowerCase() === 'link' &&
+      name === 'link' &&
       attributes.href &&
       (attributes.rel ?? '')
         .toLowerCase()
         .split(/\s+/)
         .some((rel) => ['stylesheet', 'modulepreload', 'preload', 'icon'].includes(rel))
-    )
+    ) {
       urls.add(attributes.href);
+    }
   }
   return urls;
 }
@@ -474,6 +611,25 @@ function fetchOverSocket(socket, path, timeout) {
     call.once('error', reject);
     call.end();
   });
+}
+
+async function checkAssets(uiPath, html, get) {
+  // A synthetic origin for URL resolution, never a network destination.
+  const origin = 'https://application.invalid';
+  let checkedAssets = 0;
+  for (const asset of htmlAssets(html)) {
+    // The application is served at the root of its own origin: an absolute URL somewhere else
+    // is somebody else's business, a relative one has to be in the package.
+    const url = new URL(asset, new URL(uiPath, origin));
+    if (url.origin !== origin) continue;
+    const result = await get(url.pathname + url.search);
+    check(
+      result.body.length && result.mime !== 'text/html',
+      `Missing or HTML-fallback asset: ${url.pathname}`,
+    );
+    checkedAssets++;
+  }
+  return checkedAssets;
 }
 
 async function smokeTest(args, manifest, executable) {
@@ -544,19 +700,7 @@ async function smokeTest(args, manifest, executable) {
     check(ui, `UI did not become ready: ${lastError}`);
     check(ui.mime === 'text/html' && ui.body.toString().trim(), 'UI must serve nonempty HTML');
     checkListener(child.pid, socket);
-    let checkedAssets = 0;
-    for (const asset of htmlAssets(ui.body.toString())) {
-      // The application is served at the root of its own origin: an absolute URL somewhere else
-      // is somebody else's business, a relative one has to be in the package.
-      const url = new URL(asset, new URL(args['ui-path'], 'http://application.invalid'));
-      if (url.origin !== 'http://application.invalid') continue;
-      const result = await get(url.pathname + url.search);
-      check(
-        result.body.length && result.mime !== 'text/html',
-        `Missing or HTML-fallback asset: ${url.pathname}`,
-      );
-      checkedAssets++;
-    }
+    const checkedAssets = await checkAssets(args['ui-path'], ui.body.toString(), get);
     for (const path of args['api-path']) {
       const result = await get(path);
       check(result.mime === 'application/json', `${path}: expected JSON`);
@@ -681,8 +825,10 @@ export async function testNasPackage(argv = [], projectRoot = process.cwd()) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  testNasPackage(process.argv.slice(2)).catch((error) => {
+  try {
+    await testNasPackage(process.argv.slice(2));
+  } catch (error) {
     console.error(`FAIL: ${error.message}`);
     process.exitCode = 1;
-  });
+  }
 }

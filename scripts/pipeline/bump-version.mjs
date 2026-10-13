@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execToolSync } from '../process-tools.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { addChangelogEntry } from './extract-changelog.cjs';
@@ -38,7 +38,7 @@ export function bumpVersion(oldVersion, newVersion, subjects = [], root = proces
     resolve(root, 'sonar-project.properties'),
     sonar.replace(/^sonar\.projectVersion=.*$/m, `sonar.projectVersion=${newVersion}`),
   );
-  execFileSync(
+  execToolSync(
     'cargo',
     [
       'metadata',

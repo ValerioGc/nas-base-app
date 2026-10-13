@@ -17,11 +17,13 @@ const page = defineModel<number>({ required: true });
 const total = computed(() =>
   Number.isSafeInteger(props.totalPages) ? Math.max(0, props.totalPages) : 0,
 );
-const current = computed(() =>
-  total.value === 0
-    ? 0
-    : Math.min(total.value, Math.max(1, Number.isSafeInteger(page.value) ? page.value : 1)),
-);
+const current = computed(() => {
+  if (total.value === 0) {
+    return 0;
+  }
+  const wanted = Number.isSafeInteger(page.value) ? page.value : 1;
+  return Math.min(total.value, Math.max(1, wanted));
+});
 
 const pages = computed<(number | 'before' | 'after')[]>(() => {
   if (total.value <= 7) {

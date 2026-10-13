@@ -3,25 +3,25 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { extractChangelog } from './extract-changelog.cjs';
 import { backendPackage } from '../backend-paths.mjs';
-
-const semver = /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+import { releasePattern } from './release-version.mjs';
 
 export function verifyRelease(tag, root = process.cwd()) {
   const read = (path) => readFileSync(resolve(root, path), 'utf8');
   tag ??= `v${JSON.parse(read('package.json')).version}`;
   function cargoVersion(path) {
-    const match = read(path).match(/^version\s*=\s*"([^"]+)"/m);
+    const match = /^version\s*=\s*"([^"]+)"/m.exec(read(path));
     if (!match) throw new Error(`${path} has no package version`);
     return match[1];
   }
 
   function sonarVersion() {
-    const match = read('sonar-project.properties').match(/^sonar\.projectVersion=(.+)$/m);
+    const match = /^sonar\.projectVersion=(.+)$/m.exec(read('sonar-project.properties'));
     if (!match) throw new Error('sonar-project.properties has no project version');
     return match[1];
   }
 
-  if (!semver.test(tag)) throw new Error(`Invalid release tag: ${tag}`);
+  if (!tag.startsWith('v') || !releasePattern.test(tag))
+    throw new Error(`Invalid release tag: ${tag}`);
   const expected = tag.slice(1);
   const cargo = backendPackage(root);
   const versions = {

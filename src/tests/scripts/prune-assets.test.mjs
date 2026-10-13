@@ -19,6 +19,13 @@ test('orders versions as semver does', () => {
   assert.equal(compareVersions('0.1.3', '0.1.3'), 0);
 });
 
+test('platforms and archive extensions are not prerelease identifiers', () => {
+  for (const suffix of ['-linux-x64.tar.gz', '.tgz', '.tar.gz.sha256', '.pdf', '.sha256']) {
+    assert.equal(compareVersions(`nas-app-1.2.3-rc.1${suffix}`, '1.2.3-rc.1'), 0);
+    assert.equal(compareVersions(`nas-app-1.2.3${suffix}`, '1.2.3'), 0);
+  }
+});
+
 test('keeps the release just packaged and the one before it, and nothing else versioned', () => {
   const directory = folder([
     'nas-app-0.1.8-linux-x64.tar.gz',

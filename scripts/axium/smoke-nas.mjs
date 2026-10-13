@@ -33,8 +33,10 @@ export async function smokeNas(args = [], root = process.cwd(), { env = {} } = {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  smokeNas(process.argv.slice(2)).catch((error) => {
+  try {
+    await smokeNas(process.argv.slice(2));
+  } catch (error) {
     console.error(`FAIL: ${error.message}`);
     process.exitCode = 1;
-  });
+  }
 }

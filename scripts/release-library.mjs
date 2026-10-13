@@ -1,7 +1,7 @@
 // The release of the library itself, with the procedure of the applications: `release:check`,
 // `release:test` and `release:merge`. Package, lockfile, changelog and Sonar versions move together;
 // the tag pushed by the merge publishes the package to GitHub Packages (publish.yml).
-import { execFileSync } from 'node:child_process';
+import { execToolSync } from './process-tools.mjs';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -52,7 +52,7 @@ export function verifyLibraryRelease(tag, root = process.cwd()) {
 /** The gate of a release: what the CI checks, and the package that will be published. */
 export function prepareLibraryRelease(root = process.cwd()) {
   for (const name of ['release:check', 'check', 'test:coverage', 'nas:package', 'nas:test'])
-    execFileSync('npm', ['run', name], { cwd: root, stdio: 'inherit' });
+    execToolSync('npm', ['run', name], { cwd: root, stdio: 'inherit' });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

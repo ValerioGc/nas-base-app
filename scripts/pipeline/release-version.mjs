@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process';
+import { execToolSync } from '../process-tools.mjs';
 
 export const releasePattern =
-  /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+  /^v?(?!0\d)\d+\.(?!0\d)\d+\.(?!0\d)\d+(?:-[\dA-Za-z-]+(?:\.[\dA-Za-z-]+)*)?$/;
 export function nextVersion(current, latest, bump = 'patch') {
   if (!['patch', 'minor', 'major'].includes(bump))
     throw new Error(`Unknown release type "${bump}".`);
@@ -21,7 +21,7 @@ export function nextVersion(current, latest, bump = 'patch') {
   }[bump];
 }
 export function latestTag(cwd = process.cwd()) {
-  const git = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+  const git = (...args) => execToolSync('git', args, { cwd, encoding: 'utf8' }).trim();
   git('rev-parse', '--verify', 'HEAD');
   const tags = git('tag', '--merged', 'HEAD', '--sort=-version:refname')
     .split('\n')

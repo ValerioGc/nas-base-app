@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execToolSync } from './process-tools.mjs';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -7,7 +7,7 @@ import { pruneAssets } from './prune-assets.mjs';
 const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
 const directory = 'release-assets';
 mkdirSync(directory, { recursive: true });
-execFileSync('npm', ['pack', '--pack-destination', directory], { stdio: 'inherit' });
+execToolSync('npm', ['pack', '--pack-destination', directory], { stdio: 'inherit' });
 const filename = `${manifest.name.replace(/^@/, '').replaceAll('/', '-')}-${manifest.version}.tgz`;
 const archive = join(directory, filename);
 const checksum = createHash('sha256').update(readFileSync(archive)).digest('hex');

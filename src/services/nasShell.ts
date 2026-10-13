@@ -59,8 +59,8 @@ function validTimeout(timeout: number): number {
 
 /** Same-origin protocol v1. Each instance owns its listeners and pending requests. */
 export function createNasShell(options: NasShellOptions = {}): NasShell {
-  const view =
-    options.view === undefined ? (typeof window === 'undefined' ? null : window) : options.view;
+  const defaultView = typeof window === 'undefined' ? null : window;
+  const view = options.view === undefined ? defaultView : options.view;
   const timeoutMs = validTimeout(options.timeoutMs ?? 10000);
   const pending = new Map<string, PendingRequest>();
   const listeners = new Set<(message: ShellEvent) => void>();
@@ -93,7 +93,7 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
     }
     if (typeof message.requestId === 'string') {
       const request = pending.get(message.requestId);
-      if (!request || request.type !== message.type || !request.accept(message)) {
+      if (request?.type !== message.type || !request.accept(message)) {
         return;
       }
       clearTimeout(request.timer);

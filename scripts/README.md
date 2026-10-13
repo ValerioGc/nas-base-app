@@ -56,5 +56,18 @@ Avvio, packaging e metadati rilevano il crate `backend/axum/Cargo.toml` oppure i
 `backend/Cargo.toml` di Picture. Il checker conosce le reti `smtp` e `sync` e le capability
 richiamate solo dal launcher sotto `/internal/` (`mail-events`, `cache`, `trash`).
 
+## Eseguibili degli strumenti
+
+Gli script di sviluppo e release usano `process-tools.mjs`: eseguibili assoluti e un PATH
+costruito dalle directory di sistema e delle installazioni Node/Rust dell'utente. Le directory
+del progetto, le voci relative e il PATH passato dal consumer non vengono usati per scegliere
+gli strumenti. File, directory e antenati devono appartenere a root o all'utente corrente e
+non essere scrivibili da utenti non fidati; il gruppo personale dell'utente è ammesso.
+
+Installazioni diverse si indicano con percorsi assoluti tramite `NAS_CARGO_EXECUTABLE`,
+`NAS_NPM_EXECUTABLE`, `NAS_GIT_EXECUTABLE` e `NAS_PODMAN_EXECUTABLE`. Anche questi percorsi
+vengono controllati. `CARGO_HOME` individua l'installazione Rust; i wrapper del compilatore
+vengono risolti soltanto nelle directory fidate.
+
 I plugin Vite si importano da `@valeriogc/nas-base-app/vite`, compilati in JavaScript: non entrano
 nel bundle frontend e usano i tipi di Vite e Vue già presenti nell'app.

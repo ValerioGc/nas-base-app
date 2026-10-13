@@ -35,6 +35,12 @@ function startsAnotherRule(next) {
   return line !== '' && line !== '}' && !line.startsWith('@else') && !line.startsWith('</');
 }
 
+function trimTrailingEmptyLines(lines) {
+  while (lines.length > 0 && lines.at(-1).trim() === '') {
+    lines.pop();
+  }
+}
+
 function applySpacing(source) {
   const lineEnding = source.includes('\r\n') ? '\r\n' : '\n';
   const lines = source.split(/\r?\n/);
@@ -59,12 +65,8 @@ function applySpacing(source) {
     }
 
     if (closingTag) {
-      while (formatted.length > 0 && formatted.at(-1).trim() === '') {
-        formatted.pop();
-      }
-
-      formatted.push('');
-      formatted.push(line);
+      trimTrailingEmptyLines(formatted);
+      formatted.push('', line);
       insideStyle = false;
       continue;
     }
@@ -92,8 +94,9 @@ export async function formatSfc({ root = process.cwd(), checkOnly = false } = {}
     if (!checkOnly) writeFileSync(file, wanted);
   }
   if (checkOnly && pending.length > 0) {
+    const files = pending.map((file) => '  ' + file).join('\n');
     throw new Error(
-      `Components requiring formatting (${pending.length}):\n${pending.map((file) => `  ${file}`).join('\n')}\nFormat with: pnpm run format:sfc`,
+      `Components requiring formatting (${pending.length}):\n${files}\nFormat with: pnpm run format:sfc`,
     );
   }
   if (!checkOnly && pending.length > 0) console.log(`Components formatted: ${pending.length}`);
@@ -101,8 +104,10 @@ export async function formatSfc({ root = process.cwd(), checkOnly = false } = {}
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  formatSfc({ checkOnly: process.argv.includes('--check') }).catch((error) => {
+  try {
+    await formatSfc({ checkOnly: process.argv.includes('--check') });
+  } catch (error) {
     console.error(error.message);
     process.exitCode = 1;
-  });
+  }
 }

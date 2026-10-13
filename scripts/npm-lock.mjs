@@ -9,7 +9,7 @@
 // `pnpm run lock:npm`. Under npm, as in the pipelines, the --sync does nothing: there the lockfile
 // is what installs.
 
-import { execFileSync } from 'node:child_process';
+import { execToolSync } from './process-tools.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -25,7 +25,7 @@ export function syncLock(root = process.cwd()) {
   if (!agent.startsWith('pnpm/') || process.env.CI) {
     return;
   }
-  execFileSync(
+  execToolSync(
     'npm',
     ['install', '--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund'],
     { cwd: root, stdio: 'inherit' },

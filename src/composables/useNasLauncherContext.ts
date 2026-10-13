@@ -22,12 +22,8 @@ export function useNasLauncherContext(options: NasContextOptions = {}) {
   }
 
   onMounted(() => {
-    root =
-      options.root === undefined
-        ? typeof document === 'undefined'
-          ? null
-          : document.documentElement
-        : options.root;
+    const defaultRoot = typeof document === 'undefined' ? null : document.documentElement;
+    root = options.root === undefined ? defaultRoot : options.root;
     if (root) {
       const element = root;
       const attributes = ['data-theme', 'data-nas-shell'];

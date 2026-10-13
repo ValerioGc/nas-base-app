@@ -4,7 +4,11 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { nextVersion, latestTag } from '../../../scripts/pipeline/release-version.mjs';
+import {
+  nextVersion,
+  latestTag,
+  releasePattern,
+} from '../../../scripts/pipeline/release-version.mjs';
 import { mergeRelease } from '../../../scripts/pipeline/merge_release.mjs';
 
 function fixture(t) {
@@ -33,6 +37,15 @@ test('starts the first release at the package version and validates the release 
   assert.equal(nextVersion('1.4.0', 'v1.2.3'), '1.4.0');
   assert.throws(() => nextVersion('invalid', null), /Invalid/);
   assert.throws(() => nextVersion('1.2.3', null, 'invalid'), /Unknown/);
+});
+
+test('release versions reject leading zeroes and empty prerelease identifiers', () => {
+  for (const version of ['0.0.0', 'v10.20.30', '1.2.3-rc.1', 'v1.2.3-alpha-beta.2']) {
+    assert.equal(releasePattern.test(version), true, version);
+  }
+  for (const version of ['01.2.3', '1.02.3', '1.2.03', '1.2', '1.2.3-', '1.2.3-rc..1']) {
+    assert.equal(releasePattern.test(version), false, version);
+  }
 });
 
 test('distinguishes no reachable release tags from actual Git failures', (t) => {

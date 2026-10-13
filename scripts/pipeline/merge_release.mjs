@@ -1,6 +1,5 @@
-import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { realpathSync } from 'node:fs';
+import { execToolSync } from '../process-tools.mjs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { prepareRelease } from './prepare_release.mjs';
 import { bumpVersion } from './bump-version.mjs';
@@ -17,7 +16,7 @@ export function mergeRelease({
   bump = bumpVersion,
   prepare = prepareRelease,
 } = {}) {
-  const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+  const git = (...args) => execToolSync('git', args, { encoding: 'utf8' }).trim();
   if (realpathSync(git('rev-parse', '--show-toplevel')) !== realpathSync(process.cwd()))
     throw new Error('Run the release from the application repository root');
   if (git('status', '--porcelain')) throw new Error('The working tree is not clean');
@@ -42,8 +41,8 @@ export function mergeRelease({
   // The pipelines install with `npm ci`: the lockfile goes out in step with package.json, whatever
   // pnpm add, update or remove left behind. Here only, on the machine of who releases: the release
   // gate runs in the pipelines too, where the lockfile is what installs.
-  execFileSync('npm', ['run', 'lock:npm'], { stdio: 'inherit' });
-  execFileSync('npm', ['run', 'format'], { stdio: 'inherit' });
+  execToolSync('npm', ['run', 'lock:npm'], { stdio: 'inherit' });
+  execToolSync('npm', ['run', 'format'], { stdio: 'inherit' });
   prepare();
   git('add', '-u');
   if (git('diff', '--cached', '--name-only')) git('commit', '-m', `chore: release ${tag}`);

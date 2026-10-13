@@ -23,10 +23,18 @@ ${name === 'cargo' ? `process.stdout.write('{}\\n'); process.exitCode = ${cargoS
     );
   }
   const previousPath = process.env.PATH;
+  const previousCargo = process.env.NAS_CARGO_EXECUTABLE;
+  const previousPodman = process.env.NAS_PODMAN_EXECUTABLE;
+  process.env.NAS_CARGO_EXECUTABLE = join(bin, 'cargo');
+  process.env.NAS_PODMAN_EXECUTABLE = join(bin, 'podman');
   const previousCode = process.exitCode;
   process.env.PATH = `${bin}:${previousPath}`;
   t.after(() => {
     process.env.PATH = previousPath;
+    if (previousCargo === undefined) delete process.env.NAS_CARGO_EXECUTABLE;
+    else process.env.NAS_CARGO_EXECUTABLE = previousCargo;
+    if (previousPodman === undefined) delete process.env.NAS_PODMAN_EXECUTABLE;
+    else process.env.NAS_PODMAN_EXECUTABLE = previousPodman;
     process.exitCode = previousCode;
     rmSync(root, { recursive: true, force: true });
   });

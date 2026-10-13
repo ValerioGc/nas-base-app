@@ -37,7 +37,7 @@ export function stripTestIds(): Plugin {
     apply: 'build',
     enforce: 'post',
     transformIndexHtml(html) {
-      return html.replaceAll(new RegExp(`\\s${TEST_ID_ATTRIBUTE}="[^"]*"`, 'g'), '');
+      return html.replaceAll(new RegExp(String.raw`\s${TEST_ID_ATTRIBUTE}="[^"]*"`, 'g'), '');
     },
   };
 }

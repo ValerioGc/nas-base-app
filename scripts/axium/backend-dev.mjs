@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawnTool } from '../process-tools.mjs';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,7 +9,7 @@ export function startBackend({ root = process.cwd(), socket, uiDir, cargo, env =
   const { app } = JSON.parse(readFileSync(join(root, 'nas-app.json'), 'utf8'));
   socket ??= process.env.NAS_APP_SOCKET ?? join(tmpdir(), `${app.id}-dev.sock`);
 
-  return spawn(
+  return spawnTool(
     'cargo',
     ['run', '--manifest-path', cargo ?? backendPackage(root), '--', '--listen', socket],
     {
