@@ -29,6 +29,10 @@ jobs:
           cache: npm
           registry-url: https://npm.pkg.github.com
           scope: '@valeriogc'
+      - name: Restrict Node toolcache permissions
+        run: |
+          sudo chmod go-w "$RUNNER_TOOL_CACHE"
+          sudo chmod -R go-w "$RUNNER_TOOL_CACHE/node"
       - name: Verify tag, version and changelog
         run: npm run release:check -- "${GITHUB_REF_NAME}"
       - name: Install npm dependencies

@@ -64,6 +64,11 @@ del progetto, le voci relative e il PATH passato dal consumer non vengono usati 
 gli strumenti. File, directory e antenati devono appartenere a root o all'utente corrente e
 non essere scrivibili da utenti non fidati; il gruppo personale dell'utente è ammesso.
 
+I workflow CI e Publish restringono i permessi della toolcache Node subito dopo `setup-node`:
+i runner GitHub la preparano con permessi di scrittura condivisi, incompatibili con questi
+controlli. Il passaggio rimuove la scrittura per gruppo e altri utenti dalla directory della
+cache e dall'installazione Node, mantenendo i controlli degli script anche in pipeline.
+
 Installazioni diverse si indicano con percorsi assoluti tramite `NAS_CARGO_EXECUTABLE`,
 `NAS_NPM_EXECUTABLE`, `NAS_GIT_EXECUTABLE` e `NAS_PODMAN_EXECUTABLE`. Anche questi percorsi
 vengono controllati. `CARGO_HOME` individua l'installazione Rust; i wrapper del compilatore
