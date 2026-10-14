@@ -64,10 +64,13 @@ del progetto, le voci relative e il PATH passato dal consumer non vengono usati 
 gli strumenti. File, directory e antenati devono appartenere a root o all'utente corrente e
 non essere scrivibili da utenti non fidati; il gruppo personale dell'utente è ammesso.
 
-I workflow CI e Publish restringono i permessi della toolcache Node subito dopo `setup-node`:
-i runner GitHub la preparano con permessi di scrittura condivisi, incompatibili con questi
-controlli. Il passaggio rimuove la scrittura per gruppo e altri utenti dalla directory della
-cache e dall'installazione Node, mantenendo i controlli degli script anche in pipeline.
+I workflow CI e Publish preparano i permessi subito dopo `setup-node`, usando
+`.github/scripts/prepare-tools.sh` soltanto sulla macchina effimera del runner. Il passaggio
+protegge l'intera installazione Node/npm, le directory del PATH di sistema e Rust e tutti i loro
+antenati, compresi `/opt` e la toolcache. La scrittura per gruppo e altri utenti viene rimossa;
+gli antenati con sticky bit, come `/tmp`, restano condivisi. I percorsi devono appartenere a root
+o all'utente del runner. Prima di installare le dipendenze, il workflow verifica l'ambiente
+completo e avvia npm e Git usando gli stessi controlli applicati durante la release.
 
 Installazioni diverse si indicano con percorsi assoluti tramite `NAS_CARGO_EXECUTABLE`,
 `NAS_NPM_EXECUTABLE`, `NAS_GIT_EXECUTABLE` e `NAS_PODMAN_EXECUTABLE`. Anche questi percorsi
