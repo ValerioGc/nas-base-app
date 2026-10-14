@@ -1,21 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
-import { pathToFileURL } from 'node:url';
-
-/**
- * Formatter of the Vue components: prettier, plus two rules that prettier cannot enforce.
- *
- * 1. One empty line immediately after the opening and before the closing of `<script>` and `<style>`.
- * 2. An empty line between two adjacent CSS rules.
- *
- * Prettier removes empty lines at the beginning of a block, and it has no option to keep them: for this reason,
- * `.vue` files are in `.prettierignore` and are processed here. The script calls prettier through its
- * API, so the SFCs remain formatted like everything else: with these two additional rules.
- *
- *   node scripts/format-sfc-spacing.mjs:          rewrites the files
- *   node scripts/format-sfc-spacing.mjs --check    only shows which ones need to be rewritten
- */
+import { runCli } from '../utils.mjs';
 
 function findVueFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -81,33 +67,42 @@ function applySpacing(source) {
   return formatted.join(lineEnding);
 }
 
-/** Format SFCs in one consumer without changing the library or the process directory. */
+/**
+ * Formats Vue SFC files according to Prettier configuration, ensuring proper spacing around script and style blocks.
+ * @param {{ root?: string, checkOnly?: boolean }} param0
+ * @returns {Promise<string[]>} List of files that were formatted or need formatting.
+ */
 export async function formatSfc({ root = process.cwd(), checkOnly = false } = {}) {
   const { format, resolveConfig } = createRequire(resolve(root, 'package.json'))('prettier');
+
   const pending = [];
   for (const file of findVueFiles(join(root, 'src'))) {
     const source = readFileSync(file, 'utf8');
     const options = await resolveConfig(file);
+
     const wanted = applySpacing(await format(source, { ...options, filepath: file }));
-    if (wanted === source) continue;
+    if (wanted === source) {
+      continue;
+    }
+
     pending.push(file);
-    if (!checkOnly) writeFileSync(file, wanted);
+    if (!checkOnly) {
+      writeFileSync(file, wanted);
+    }
   }
+
   if (checkOnly && pending.length > 0) {
     const files = pending.map((file) => '  ' + file).join('\n');
     throw new Error(
       `Components requiring formatting (${pending.length}):\n${files}\nFormat with: pnpm run format:sfc`,
     );
   }
-  if (!checkOnly && pending.length > 0) console.log(`Components formatted: ${pending.length}`);
+
+  if (!checkOnly && pending.length > 0) {
+    console.log(`Components formatted: ${pending.length}`);
+  }
+
   return pending;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  try {
-    await formatSfc({ checkOnly: process.argv.includes('--check') });
-  } catch (error) {
-    console.error(error.message);
-    process.exitCode = 1;
-  }
-}
+await runCli(import.meta.url, () => formatSfc({ checkOnly: process.argv.includes('--check') }));

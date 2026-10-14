@@ -11,62 +11,40 @@ test('lock CLI verifies peers and reports missing or mismatched dependencies', (
   const f = toolFixture(t);
   const manifest = { dependencies: { sample: '1' }, peerDependencies: { vue: '^3' } };
   f.json('package.json', manifest);
-  assert.match(f.cli('npm-lock.mjs', ['--check'], {}, 1).stderr, /missing or unreadable/);
+  assert.match(f.cli('dev/npm-lock.mjs', ['--check'], {}, 1).stderr, /missing or unreadable/);
   f.json('package-lock.json', {});
-  assert.match(f.cli('npm-lock.mjs', ['--check'], {}, 1).stderr, /sample/);
+  assert.match(f.cli('dev/npm-lock.mjs', ['--check'], {}, 1).stderr, /sample/);
   f.json('package-lock.json', {
     packages: { '': { ...manifest, optionalDependencies: { extra: '1' } } },
   });
-  assert.match(f.cli('npm-lock.mjs', ['--check'], {}, 1).stderr, /extra/);
+  assert.match(f.cli('dev/npm-lock.mjs', ['--check'], {}, 1).stderr, /extra/);
   f.json('package-lock.json', { packages: { '': manifest } });
-  f.cli('npm-lock.mjs', ['--check']);
-  assert.match(f.cli('npm-lock.mjs', ['wrong'], {}, 1).stderr, /usage:/);
+  f.cli('dev/npm-lock.mjs', ['--check']);
+  assert.match(f.cli('dev/npm-lock.mjs', ['wrong'], {}, 1).stderr, /usage:/);
 });
 
 test('lock synchronization runs only for a local pnpm install of the consumer itself', (t) => {
   const f = toolFixture(t);
   f.install('npm');
-  f.cli('npm-lock.mjs', ['--sync'], { npm_config_user_agent: 'npm/11', CI: '' });
-  f.cli('npm-lock.mjs', ['--sync'], { npm_config_user_agent: 'pnpm/10', CI: 'true' });
-  f.cli('npm-lock.mjs', ['--sync'], { npm_config_user_agent: 'pnpm/10', CI: '', INIT_CWD: '/tmp' });
+  f.cli('dev/npm-lock.mjs', ['--sync'], { npm_config_user_agent: 'npm/11', CI: '' });
+  f.cli('dev/npm-lock.mjs', ['--sync'], { npm_config_user_agent: 'pnpm/10', CI: 'true' });
+  f.cli('dev/npm-lock.mjs', ['--sync'], {
+    npm_config_user_agent: 'pnpm/10',
+    CI: '',
+    INIT_CWD: '/tmp',
+  });
   assert.equal(existsSync(f.env.NAS_TEST_CALLS), false);
-  f.cli('npm-lock.mjs', ['--sync'], { npm_config_user_agent: 'pnpm/10', CI: '', INIT_CWD: f.root });
+  f.cli('dev/npm-lock.mjs', ['--sync'], {
+    npm_config_user_agent: 'pnpm/10',
+    CI: '',
+    INIT_CWD: f.root,
+  });
   assert.deepEqual(f.calls(), [
     {
       tool: 'npm',
       args: ['install', '--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund'],
     },
   ]);
-});
-
-test('Rust coverage CLI remaps source paths and rejects invalid limits or unknown sources', (t) => {
-  const f = toolFixture(t);
-  mkdirSync(join(f.root, 'backend/src'), { recursive: true });
-  writeFileSync(join(f.root, 'backend/Cargo.toml'), '[package]\nname = "sample"\n');
-  writeFileSync(join(f.root, 'backend/src/main.rs'), 'fn main() {}\n');
-  f.install(
-    'cargo',
-    `fs.writeFileSync(args[args.indexOf('--output-path') + 1], 'SF:' + (process.env.NAS_TEST_SOURCE ?? 'backend/src/main.rs') + '\\nDA:1,1\\nend_of_record\\n');`,
-  );
-  f.cli('pipeline/coverage-rust.mjs');
-  assert.ok(!f.calls()[0].args.includes('--fail-under-lines'));
-  f.cli('pipeline/coverage-rust.mjs', ['--fail-under-lines=80'], {
-    NAS_TEST_SOURCE: 'src/main.rs',
-  });
-  assert.match(
-    readFileSync(join(f.root, 'backend/coverage/lcov.info'), 'utf8'),
-    /SF:.*backend\/src\/main.rs/,
-  );
-  for (const value of ['NaN', '-1', '101']) {
-    assert.match(
-      f.cli('pipeline/coverage-rust.mjs', [`--fail-under-lines=${value}`], {}, 1).stderr,
-      /between 0 and 100/,
-    );
-  }
-  assert.match(
-    f.cli('pipeline/coverage-rust.mjs', [], { NAS_TEST_SOURCE: 'missing.rs' }, 1).stderr,
-    /source does not exist/,
-  );
 });
 
 test('backend CLI forwards termination signals and exits with the child status', async (t) => {

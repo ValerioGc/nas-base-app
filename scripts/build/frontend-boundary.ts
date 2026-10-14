@@ -1,5 +1,10 @@
 import type { Plugin } from 'vite';
 
+/**
+ * Ensures that the NAS frontend does not import native modules based on the target environment.
+ * @param target The target environment, either 'axum' or 'tauri'.
+ * @returns {Plugin} Vite plugin that enforces the frontend boundary.
+ */
 export function frontendBoundary(target: 'axum' | 'tauri'): Plugin {
   return {
     name: 'nas-frontend-boundary',

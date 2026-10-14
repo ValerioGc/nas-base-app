@@ -27,3 +27,10 @@ test('the npm package contains the build and externalizes Vue', () => {
   assert(manifest.peerDependencies.vue);
   assert.equal(manifest.dependencies, undefined);
 });
+
+test('shared scripts contain no project analysis references', () => {
+  for (const file of files('scripts')) {
+    assert.doesNotMatch(readFileSync(file, 'utf8'), /sonar/i, file);
+    assert.doesNotMatch(file, /sonar/i);
+  }
+});

@@ -11,6 +11,7 @@ export function toolFixture(t) {
   const bin = join(root, 'bin');
   mkdirSync(bin);
   const env = { ...process.env, NAS_TEST_ROOT: root, NAS_TEST_CALLS: join(root, 'calls.jsonl') };
+  
   function install(name, body = '') {
     const executable = join(bin, name);
     writeFileSync(
@@ -21,6 +22,7 @@ export function toolFixture(t) {
     env[`NAS_${name.toUpperCase()}_EXECUTABLE`] = executable;
     return executable;
   }
+
   const cli = (script, args = [], extraEnv = {}, expected = 0) => {
     const path = fileURLToPath(new URL(`../../../scripts/${script}`, import.meta.url));
     const result = spawnSync(process.execPath, [path, ...args], {
@@ -46,7 +48,6 @@ export function releaseFixture(t) {
     join(root, 'backend/Cargo.toml'),
     '[package]\nname = "sample"\nversion = "1.2.3"\n',
   );
-  writeFileSync(join(root, 'sonar-project.properties'), 'sonar.projectVersion=1.2.3\n');
   writeFileSync(join(root, 'CHANGELOG.txt'), '## [1.2.3]\n\n- Initial.\n');
   json('package.json', { name: 'sample', version: '1.2.3' });
   json('package-lock.json', { version: '1.2.3', packages: { '': { version: '1.2.3' } } });

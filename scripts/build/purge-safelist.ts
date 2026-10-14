@@ -1,7 +1,5 @@
 /**
- * The classes and the elements the components of the library put in their own templates. An
- * application that purges the CSS it does not use finds none of them in its sources: its safelist
- * keeps them.
+ * The safelist contains classes and elements from the library components that PurgeCSS cannot detect in the consumer app's source code.
  */
 export const nasPurgeSafelist = [
   'active',
@@ -44,7 +42,7 @@ export const nasPurgeSafelist = [
   'step_arrow',
   'subtitle',
   'up',
-  // Elements
+
   'aside',
   'button',
   'dialog',

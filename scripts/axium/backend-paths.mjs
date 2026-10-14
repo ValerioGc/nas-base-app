@@ -1,7 +1,8 @@
+// Utility functions to determine the paths of the NAS backend package and workspace.
+
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-/** Most apps have an Axum crate in a workspace; Picture has its crate at backend/. */
 export function backendPackage(root) {
   return existsSync(resolve(root, 'backend/axum/Cargo.toml')) ||
     !existsSync(resolve(root, 'backend/Cargo.toml'))

@@ -27,20 +27,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-      - name: Prepare and verify tool permissions
-        run: |
-          sudo /bin/bash .github/scripts/prepare-tools.sh \
-            --node "$(node -p 'process.execPath')" \
-            --cargo-home "${CARGO_HOME:-$HOME/.cargo}" \
-            --runner-uid "$(id -u)" \
-            --tool-cache "$RUNNER_TOOL_CACHE"
-          node --input-type=module -e '
-            import { toolEnvironment, toolPath, execToolSync } from "./scripts/process-tools.mjs";
-            toolEnvironment();
-            for (const tool of ["npm", "git"]) toolPath(tool);
-            execToolSync("npm", ["--version"], { stdio: "inherit" });
-            execToolSync("git", ["--version"], { stdio: "inherit" });
-          '
       - name: Install npm dependencies
         run: npm ci
       - name: Verify, test and build

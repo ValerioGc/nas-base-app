@@ -3,6 +3,7 @@ dist/
 release-assets/
 coverage/
 pnpm-lock.yaml
+pnpm-workspace.yaml
 package-lock.json
 **/*.vue
 .scannerwork/

@@ -47,7 +47,9 @@ for (const entry of readFileSync('coverage/scripts.lcov.info', 'utf8').split('en
     branches: percent('BRH', 'BRF'),
   };
 }
+
 writeFileSync('coverage/scripts-summary.json', `${JSON.stringify(summary, null, 2)}\n`);
+
 let failed = false;
 for (const source of globSync('scripts/**/*.{mjs,cjs}')) {
   const metrics = summary[resolve(source)];
@@ -63,4 +65,7 @@ for (const source of globSync('scripts/**/*.{mjs,cjs}')) {
     }
   }
 }
-if (failed) process.exitCode = 1;
+
+if (failed){
+  process.exitCode = 1;
+}

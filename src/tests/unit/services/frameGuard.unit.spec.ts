@@ -5,7 +5,6 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-/** The window of a frame, as the launcher holds an application. */
 function framed() {
   const frame = document.createElement('iframe');
   document.body.append(frame);

@@ -1,10 +1,6 @@
 import { computed, ref, type Ref } from 'vue';
 import type { NasLocale } from '../types/launcher';
 
-/**
- * The language of an application and its catalogues, which stay in the application. `setLocale`
- * also marks the page with the language, for the browser and the screen readers.
- */
 export function createNasI18n<Messages extends Record<NasLocale, object>>(
   messages: Messages,
   initial: NasLocale = 'it',

@@ -14,13 +14,16 @@ interface Props {
 
 const props = defineProps<Props>();
 const page = defineModel<number>({ required: true });
+
 const total = computed(() =>
   Number.isSafeInteger(props.totalPages) ? Math.max(0, props.totalPages) : 0,
 );
+
 const current = computed(() => {
   if (total.value === 0) {
     return 0;
   }
+
   const wanted = Number.isSafeInteger(page.value) ? page.value : 1;
   return Math.min(total.value, Math.max(1, wanted));
 });
@@ -36,12 +39,15 @@ const pages = computed<(number | 'before' | 'after')[]>(() => {
   if (start > 2) {
     items.push(start === 3 ? 2 : 'before');
   }
+
   for (let value = start; value <= end; value += 1) {
     items.push(value);
   }
+  
   if (end < total.value - 1) {
     items.push(end === total.value - 2 ? total.value - 1 : 'after');
   }
+  
   items.push(total.value);
   return items;
 });
@@ -64,6 +70,8 @@ function select(next: number) {
     >
       {{ previousLabel }}
     </button>
+
+    <!-- Pagination pages -->
     <ul class="nas_pagination_pages">
       <li v-for="item in pages" :key="item">
         <button

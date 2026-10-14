@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['node_modules', 'dist', 'release-assets', 'coverage', '.pnpm-store', '.scannerwork'],
+    ignores: ['node_modules', 'dist', 'release-assets', 'coverage', '.scannerwork'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

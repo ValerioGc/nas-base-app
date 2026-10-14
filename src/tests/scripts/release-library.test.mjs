@@ -4,8 +4,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { bumpLibrary, verifyLibraryRelease } from '../../../scripts/release-library.mjs';
-import { mergeRelease } from '../../../scripts/pipeline/merge_release.mjs';
+import { bumpLibrary, verifyLibraryRelease } from '../../../scripts/release/release-library.mjs';
+import { mergeRelease } from '../../../scripts/release/merge_release.mjs';
 
 function library(t, version = '0.1.0') {
   const root = mkdtempSync(join(tmpdir(), 'nas-library-release-'));
@@ -70,15 +70,19 @@ test('the merge of a library runs its own bump and gate, and a dry run touches n
   }
 });
 
-test('a library release keeps the Sonar project version in step with the package', (t) => {
+test('a library release leaves project analysis configuration untouched', (t) => {
   const root = library(t);
   writeFileSync(
-    join(root, 'sonar-project.properties'),
-    'sonar.projectKey=nas-base-app\nsonar.projectVersion=0.1.0\n',
+    join(root, 'sonar.properties'),
+    'sonar.projectKey=nas-base-app\nsonar.projectVersion=9.9.9\n',
   );
-  assert.ok(bumpLibrary('0.1.0', '0.1.1', [], root).includes('sonar-project.properties'));
+  assert.deepEqual(bumpLibrary('0.1.0', '0.1.1', [], root), [
+    'package.json',
+    'package-lock.json',
+    'CHANGELOG.txt',
+  ]);
   assert.equal(
-    readFileSync(join(root, 'sonar-project.properties'), 'utf8'),
-    'sonar.projectKey=nas-base-app\nsonar.projectVersion=0.1.1\n',
+    readFileSync(join(root, 'sonar.properties'), 'utf8'),
+    'sonar.projectKey=nas-base-app\nsonar.projectVersion=9.9.9\n',
   );
 });

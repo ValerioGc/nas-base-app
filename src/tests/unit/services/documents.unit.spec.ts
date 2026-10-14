@@ -14,10 +14,8 @@ const parse = (saved: unknown): Settings => ({
 });
 
 let documents = 0;
-/** A document of its own for each test: the pages of a test share its name only on purpose. */
 const named = () => `test-${++documents}`;
 
-/** A backend that keeps what it is given, and remembers every request. */
 function backend(saved: unknown = null) {
   let stored = saved === null ? null : JSON.stringify(saved);
   const fetch = vi.fn(async (_url: string, init?: RequestInit) => {
@@ -29,7 +27,6 @@ function backend(saved: unknown = null) {
   });
   vi.stubGlobal('fetch', fetch);
   const writes = () => fetch.mock.calls.filter(([, init]) => init?.method === 'PUT');
-  // What another browser saves in the meantime.
   const save = (value: unknown) => (stored = JSON.stringify(value));
   return { fetch, writes, save, stored: () => stored };
 }
@@ -146,7 +143,7 @@ describe('a stored document', () => {
     await settings.load();
     settings.value.value = { size: 8 };
     await nextTick();
-    // What is about to be saved is newer than the backend: it is not read over.
+
     await settings.load();
     expect(settings.value.value).toEqual({ size: 8 });
 

@@ -20,11 +20,10 @@ import {
   extractChangelog,
   nextVersion,
   startBackend,
-  coverageRust,
   packageNas,
   bumpVersion,
 } from '../../../scripts/index.mjs';
-import { backendPackage } from '../../../scripts/backend-paths.mjs';
+import { backendPackage } from '../../../scripts/axium/backend-paths.mjs';
 
 const tools = new URL('../../../scripts/index.mjs', import.meta.url).href;
 const checker = fileURLToPath(
@@ -84,7 +83,6 @@ test('one release checker reads versions and changelog from two independent cons
     json(root, 'package.json', { version });
     json(root, 'nas-app.json', { app: { version } });
     writeFileSync(join(root, cargo), `[package]\nversion = "${version}"\n`);
-    writeFileSync(join(root, 'sonar-project.properties'), `sonar.projectVersion=${version}\n`);
     writeFileSync(
       join(root, 'CHANGELOG.txt'),
       `## [${version}]\n\n### Added\n\n- Consumer feature.\n\n## [0.0.1]\n\n- Older release.\n`,
@@ -138,38 +136,6 @@ test('backend starts from either Cargo layout and accepts the consumer environme
   }
 });
 
-test('shared Rust coverage preserves the optional Monitor/Security minimum', (t) => {
-  const root = fixture(t);
-  mkdirSync(join(root, 'bin'));
-  mkdirSync(join(root, 'backend/src'), { recursive: true });
-  writeFileSync(join(root, 'backend/Cargo.toml'), '[package]\nname = "sample"\n');
-  writeFileSync(join(root, 'backend/src/main.rs'), 'fn main() {}\n');
-  const executable = join(root, 'bin/cargo');
-  writeFileSync(
-    executable,
-    `#!${process.execPath}\nconst fs = require('node:fs'); const args = process.argv.slice(2); fs.writeFileSync('coverage-args.json', JSON.stringify(args)); fs.writeFileSync(args[args.indexOf('--output-path') + 1], 'SF:src/main.rs\\nDA:1,1\\nend_of_record\\n');\n`,
-  );
-  chmodSync(executable, 0o755);
-  const previousPath = process.env.PATH;
-  const previousCargo = process.env.NAS_CARGO_EXECUTABLE;
-  process.env.NAS_CARGO_EXECUTABLE = executable;
-  process.env.PATH = `${join(root, 'bin')}:${previousPath}`;
-  try {
-    coverageRust(root, { failUnderLines: 80 });
-    const args = JSON.parse(readFileSync(join(root, 'coverage-args.json'), 'utf8'));
-    assert.equal(args[args.indexOf('--fail-under-lines') + 1], '80');
-    assert.match(
-      readFileSync(join(root, 'backend/coverage/lcov.info'), 'utf8'),
-      new RegExp(`SF:${join(root, 'backend/src/main.rs')}`),
-    );
-    assert.throws(() => coverageRust(root, { failUnderLines: 101 }), /between 0 and 100/);
-  } finally {
-    process.env.PATH = previousPath;
-    if (previousCargo === undefined) delete process.env.NAS_CARGO_EXECUTABLE;
-    else process.env.NAS_CARGO_EXECUTABLE = previousCargo;
-  }
-});
-
 test('packaging and release updates support a direct backend crate without Git', (t) => {
   const root = fixture(t);
   for (const directory of ['backend', 'bin', 'dist/axum', 'src/assets'])
@@ -220,7 +186,6 @@ test('packaging and release updates support a direct backend crate without Git',
     assert.equal(cli.status, 0, cli.stderr);
     assert.match(cli.stdout, /sample-1\.2\.3-linux-/);
     json(root, 'package-lock.json', { version: '1.2.3', packages: { '': { version: '1.2.3' } } });
-    writeFileSync(join(root, 'sonar-project.properties'), 'sonar.projectVersion=1.2.3\n');
     writeFileSync(join(root, 'CHANGELOG.txt'), '## [1.2.3]\n\n### Added\n\n- Initial release.\n');
     const files = bumpVersion('1.2.3', '1.2.4', ['fix: shared tools'], root);
     assert.ok(files.includes('backend/Cargo.toml'));

@@ -42,6 +42,7 @@ function successful(message: Record<string, unknown>): void {
   if (typeof message.success !== 'boolean') {
     invalidResponse();
   }
+
   if (!message.success) {
     throw new NasShellError(
       'launcher-error',
@@ -54,10 +55,10 @@ function validTimeout(timeout: number): number {
   if (!Number.isFinite(timeout) || timeout <= 0 || timeout > 2147483647) {
     throw new RangeError('timeoutMs must be a positive finite timer duration');
   }
+
   return timeout;
 }
 
-/** Same-origin protocol v1. Each instance owns its listeners and pending requests. */
 export function createNasShell(options: NasShellOptions = {}): NasShell {
   const defaultView = typeof window === 'undefined' ? null : window;
   const view = options.view === undefined ? defaultView : options.view;
@@ -91,29 +92,35 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
     if (!isRecord(message) || message.nas !== 1 || typeof message.type !== 'string') {
       return;
     }
+
     if (typeof message.requestId === 'string') {
       const request = pending.get(message.requestId);
       if (request?.type !== message.type || !request.accept(message)) {
         return;
       }
+
       clearTimeout(request.timer);
       pending.delete(message.requestId);
       request.resolve(message);
       detachIfIdle();
       return;
     }
+
     let eventMessage: ShellEvent;
     if (message.type === 'context' && isContext(message.context)) {
       eventMessage = { nas: 1, type: 'context', context: message.context };
-    } else if (
+    } 
+    else if (
       message.type === 'described' &&
       Array.isArray(message.notifications) &&
       message.notifications.every(isNotification)
     ) {
       eventMessage = { nas: 1, type: 'described', notifications: message.notifications };
-    } else {
+    } 
+    else {
       return;
     }
+
     for (const listener of listeners) {
       listener(eventMessage);
     }
@@ -130,6 +137,7 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
     if (!view || !available()) {
       return false;
     }
+
     view.parent.postMessage({ ...message, nas: 1 }, view.location.origin);
     return true;
   }
@@ -146,8 +154,10 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
         new NasShellError(disposed ? 'disposed' : 'unavailable', 'Launcher unavailable'),
       );
     }
+
     validTimeout(wait);
     const requestId = randomUuid(view.crypto);
+
     return new Promise<Record<string, unknown>>((resolve, reject) => {
       const timer = setTimeout(() => {
         pending.delete(requestId);
@@ -156,6 +166,7 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
       }, wait);
       pending.set(requestId, { type: `${type}-result`, resolve, reject, timer, accept });
       register();
+
       try {
         post({ ...payload, type, requestId });
       } catch {
@@ -175,6 +186,7 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
     ) {
       throw new TypeError('directory must be an absolute path of at most 2048 characters');
     }
+
     if (
       payload.extensions &&
       (payload.extensions.length > 32 ||
@@ -182,6 +194,7 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
     ) {
       throw new TypeError('extensions must contain at most 32 file extensions, including the dot');
     }
+
     return request(
       'pick-files',
       payload,
@@ -190,6 +203,7 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
         if (typeof message.error === 'string' && message.error && message.cancelled !== true) {
           throw new NasShellError('launcher-error', message.error);
         }
+
         if (
           !Array.isArray(message.files) ||
           !message.files.every(isPickedFile) ||
@@ -197,6 +211,7 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
         ) {
           invalidResponse();
         }
+
         return {
           files: message.files,
           cancelled: message.cancelled,
@@ -215,6 +230,7 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
       if (disposed) {
         throw new NasShellError('disposed', 'Bridge disposed');
       }
+
       listeners.add(listener);
       register();
       return () => {
@@ -227,20 +243,22 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
       if (!app.trim()) {
         throw new TypeError('app must not be empty');
       }
+
       if (location !== undefined && (!location.startsWith('?') || location.length > 2048)) {
         throw new TypeError('location must be a query string of at most 2048 characters');
       }
+      
       return post({ type: 'open', app, ...(location === undefined ? {} : { location }) });
     },
     openHttps: () => post({ type: 'open-https' }),
     notify: (title, message = '', tone = 'info') => post({ type: 'notify', title, message, tone }),
     describeNotifications: (notifications) => post({ type: 'describe', notifications }),
-    sendPickedFiles: (token, files, cancelled = false) =>
-      post({ type: 'files-picked', token, files, cancelled }),
+    sendPickedFiles: (token, files, cancelled = false) => post({ type: 'files-picked', token, files, cancelled }),
     request(type, payload = {}, options = {}) {
       if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(type)) {
         throw new TypeError('Request type must be a protocol command name');
       }
+
       return request(
         type,
         payload,
@@ -270,6 +288,7 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
         if (!Array.isArray(message.data) || !message.data.every(isNetworkDisk)) {
           invalidResponse();
         }
+
         return message.data;
       }),
     requestPowerSchedule: () =>
@@ -278,17 +297,20 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
         if (!isPowerSchedule(message.data)) {
           invalidResponse();
         }
+
         return message.data;
       }),
     dispose() {
       if (disposed) {
         return;
       }
+
       disposed = true;
       for (const request of pending.values()) {
         clearTimeout(request.timer);
         request.reject(new NasShellError('disposed', 'Bridge disposed'));
       }
+      
       pending.clear();
       listeners.clear();
       detachIfIdle();

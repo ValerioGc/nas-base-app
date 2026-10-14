@@ -8,8 +8,8 @@ import {
   nextVersion,
   latestTag,
   releasePattern,
-} from '../../../scripts/pipeline/release-version.mjs';
-import { mergeRelease } from '../../../scripts/pipeline/merge_release.mjs';
+} from '../../../scripts/release/release-version.mjs';
+import { mergeRelease } from '../../../scripts/release/merge_release.mjs';
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'nas-release-test-'));

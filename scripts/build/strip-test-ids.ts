@@ -3,14 +3,11 @@ import type { CompilerOptions } from 'vue/compiler-sfc';
 type NodeTransform = NonNullable<CompilerOptions['nodeTransforms']>[number];
 import type { Plugin } from 'vite';
 
-// Stable Vue template AST node kinds. Types come from the existing Vue peer.
+// Node types used in the Vue AST for identifying elements, attributes, and expressions.
 const NodeTypes = { ELEMENT: 1, ATTRIBUTE: 6, SIMPLE_EXPRESSION: 4 } as const;
+
 export const TEST_ID_ATTRIBUTE = 'data-testid';
 
-/**
- * Removes data-testid attributes from Vue templates during production builds.
- * Tests and Playwright keep the attributes while running in development.
- */
 export const stripTestIdsNodeTransform: NodeTransform = (node) => {
   if (node.type !== NodeTypes.ELEMENT) {
     return;
@@ -30,7 +27,10 @@ export const stripTestIdsNodeTransform: NodeTransform = (node) => {
   });
 };
 
-/** Removes data-testid attributes from the static HTML served by Vite. */
+/**
+ * Removes data-testid attributes from the HTML during the Vite build process.
+ * @returns {Plugin} Vite plugin that strips data-testid attributes.
+ */
 export function stripTestIds(): Plugin {
   return {
     name: 'strip-test-ids',

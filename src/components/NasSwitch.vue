@@ -11,7 +11,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), { disabled: false, testid: undefined });
 
 const checked = defineModel<boolean>({ required: true });
-// An id of its own, for the browser to tell the field apart.
+
 const id = useId();
 
 </script>
@@ -31,6 +31,8 @@ const id = useId();
       :disabled="props.disabled"
       :data-testid="props.testid"
     />
+    
+    <!-- Switch track and label -->
     <span class="app_switch_track" aria-hidden="true"></span>
     <span class="app_switch_label">{{ props.label }}</span>
   </label>

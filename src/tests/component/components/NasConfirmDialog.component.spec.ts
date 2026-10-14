@@ -10,6 +10,7 @@ const props = {
   cancelLabel: 'Cancel',
   confirmLabel: 'Remove',
 };
+
 const prototype = HTMLDialogElement.prototype;
 const originalShow = Object.getOwnPropertyDescriptor(prototype, 'showModal');
 const originalClose = Object.getOwnPropertyDescriptor(prototype, 'close');

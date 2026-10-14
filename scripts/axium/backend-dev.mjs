@@ -1,16 +1,17 @@
-import { spawnTool } from '../process-tools.mjs';
-import { readFileSync } from 'node:fs';
+// Script to start the NAS backend in development mode.
+
+import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { backendPackage } from '../backend-paths.mjs';
+import { backendPackage } from './backend-paths.mjs';
+import { cargoExecutable, isMain, readJson } from '../utils.mjs';
 
 export function startBackend({ root = process.cwd(), socket, uiDir, cargo, env = {} } = {}) {
-  const { app } = JSON.parse(readFileSync(join(root, 'nas-app.json'), 'utf8'));
+  const { app } = readJson(join(root, 'nas-app.json'));
   socket ??= process.env.NAS_APP_SOCKET ?? join(tmpdir(), `${app.id}-dev.sock`);
 
-  return spawnTool(
-    'cargo',
+  return spawn(
+    cargoExecutable(env),
     ['run', '--manifest-path', cargo ?? backendPackage(root), '--', '--listen', socket],
     {
       cwd: root,
@@ -24,13 +25,14 @@ export function startBackend({ root = process.cwd(), socket, uiDir, cargo, env =
   );
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMain(import.meta.url)) {
   const child = startBackend();
   const handlers = ['SIGINT', 'SIGTERM'].map((signal) => {
     const forward = () => child.kill(signal);
     process.on(signal, forward);
     return [signal, forward];
   });
+
   const cleanup = () => handlers.forEach(([signal, handler]) => process.off(signal, handler));
 
   child.on('error', (error) => {

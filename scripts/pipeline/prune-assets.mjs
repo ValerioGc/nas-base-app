@@ -1,14 +1,10 @@
-// Keeps in the release folder only the release just packaged and the one before it: every other
-// file with a version in its name goes, those of an older name of the package included. Files with
-// no version, and folders, stay.
+// Prune old release assets, keeping only the current and the most recent previous version.
 
 import { readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
-// A version in a file name: 1.2.3, or 1.2.3-rc.1. Neither the platform after it nor the extension
-// is part of a pre-release.
 const VERSION = /(?<![\d.])(\d+)\.(\d+)\.(\d+)/;
-const PRE_RELEASE = /^-(?!linux\b)([0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)/;
+const PRE_RELEASE = /^-(?!linux\b)([\dA-Za-z-]+(?:\.[\dA-Za-z-]+)*)/;
 const EXTENSION = /\.(?:tgz|tar|pdf|sha256)\b/;
 
 function parse(text) {
@@ -16,8 +12,14 @@ function parse(text) {
   if (!match) {
     return null;
   }
-  const suffix = text.slice(match.index + match[0].length).split(EXTENSION, 1)[0];
+
+  const suffix = text
+    .slice(match.index + match[0].length)
+    .split(EXTENSION, 1)[0]
+    .split('-linux-', 1)[0];
+
   const pre = PRE_RELEASE.exec(suffix)?.[1] ?? '';
+
   return {
     text: match[0] + (pre ? `-${pre}` : ''),
     parts: match.slice(1, 4).map(Number),
@@ -25,51 +27,88 @@ function parse(text) {
   };
 }
 
-/** Orders two versions as semver does: a pre-release comes before its release. */
+function comparePrereleases(left, right) {
+  const a = left.split('.');
+  const b = right.split('.');
+
+  for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
+    if (a[index] === b[index]) {
+      continue;
+    }
+
+    const leftNumeric = /^\d+$/.test(a[index]);
+    const rightNumeric = /^\d+$/.test(b[index]);
+    if (leftNumeric && rightNumeric) {
+      return Math.sign(Number(BigInt(a[index]) - BigInt(b[index])));
+    }
+    if (leftNumeric !== rightNumeric) {
+      return leftNumeric ? -1 : 1;
+    }
+
+    return a[index] < b[index] ? -1 : 1;
+  }
+
+  return a.length - b.length;
+}
+
+// Compare two semantic version strings, including prereleases.
 export function compareVersions(left, right) {
   const a = parse(left);
   const b = parse(right);
-  if (!a || !b) throw new Error('Invalid release version');
+  if (!a || !b) {
+    throw new Error('Invalid release version');
+  }
+
   for (let index = 0; index < 3; index += 1) {
     if (a.parts[index] !== b.parts[index]) {
       return a.parts[index] - b.parts[index];
     }
   }
+
   if (a.pre === b.pre) {
     return 0;
   }
+
   if (!a.pre) {
     return 1;
   }
+
   if (!b.pre) {
     return -1;
   }
-  return a.pre < b.pre ? -1 : 1;
+
+  return comparePrereleases(a.pre, b.pre);
 }
 
 /**
- * Removes from `directory` the files of releases other than `version` and the one before it, the
- * newest older version among the files named with one of `prefixes`. Answers the removed names.
+ * Conserva la versione corrente e la precedente più recente con un prefisso ammesso.
+ * Elimina gli altri file versionati, anche con nomi diversi; lascia cartelle e file senza versione.
+ * Restituisce i nomi eliminati.
  */
 export function pruneAssets(directory, version, prefixes) {
   const files = readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isFile())
     .map((entry) => entry.name);
+
   const own = (name) => prefixes.some((prefix) => name.startsWith(prefix));
   const versionOf = (name) => parse(name)?.text ?? null;
+
   const previous = files
     .filter(own)
     .map(versionOf)
     .filter((found) => found !== null && compareVersions(found, version) < 0)
     .sort(compareVersions)
     .at(-1);
+
   const kept = new Set([version, previous].filter(Boolean));
   const removed = files.filter((name) => {
     const found = versionOf(name);
     return found !== null && !(own(name) && kept.has(found));
   });
+
   for (const name of removed) {
     rmSync(join(directory, name), { force: true });
   }
+
   return removed;
 }

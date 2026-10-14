@@ -4,6 +4,4 @@ release-assets/
 coverage/
 pnpm-lock.yaml
 pnpm-workspace.yaml
-.pnpm-store/
-*.tsbuildinfo
 .scannerwork/

@@ -45,6 +45,8 @@ function confirm() {
   >
     <h2 :id="`${id}_title`">{{ title }}</h2>
     <p :id="`${id}_message`" class="nas_confirm_message">{{ message }}</p>
+
+    <!-- Dialog actions -->
     <footer class="nas_confirm_actions">
       <button
         type="button"
@@ -66,6 +68,8 @@ function confirm() {
         {{ confirmLabel }}
       </button>
     </footer>
-    <slot />
+    
+    <!-- Default slot for additional content -->
+    <slot></slot>
   </dialog>
 </template>

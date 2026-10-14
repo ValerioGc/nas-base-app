@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import childProcess, { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   cpSync,
@@ -11,9 +11,11 @@ import {
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
+import { syncBuiltinESMExports } from 'node:module';
 import test from 'node:test';
 import { toolFixture } from '../helpers/script-tools.mjs';
+import { packLibrary } from '../../../scripts/release/release-library.mjs';
 
 function application(t) {
   const f = toolFixture(t);
@@ -124,21 +126,6 @@ test('NAS packaging reports missing build artifacts and cleans staging after tar
   assert.equal(existsSync(call.args[call.args.indexOf('--directory') + 1]), false);
 });
 
-test('style packaging preserves relative SCSS imports and omits non-style sources', (t) => {
-  const f = toolFixture(t);
-  mkdirSync(join(f.root, 'src/styles/partials'), { recursive: true });
-  writeFileSync(join(f.root, 'src/styles/main.scss'), '@use "partials/color";\n');
-  writeFileSync(join(f.root, 'src/styles/partials/_color.scss'), '$accent: red;\n');
-  writeFileSync(join(f.root, 'src/styles/style.ts'), 'export {};\n');
-  f.cli('package-styles.mjs');
-  assert.equal(
-    readFileSync(join(f.root, 'dist/styles/main.scss'), 'utf8'),
-    '@use "partials/color";\n',
-  );
-  assert.ok(existsSync(join(f.root, 'dist/styles/partials/_color.scss')));
-  assert.equal(existsSync(join(f.root, 'dist/styles/style.ts')), false);
-});
-
 test('library packaging writes a sha256sum file and removes releases older than the predecessor', (t) => {
   const f = toolFixture(t);
   f.json('package.json', { name: '@sample/library', version: '1.2.3' });
@@ -149,7 +136,7 @@ test('library packaging writes a sha256sum file and removes releases older than 
     'npm',
     "fs.writeFileSync('release-assets/sample-library-1.2.3.tgz', 'packed library');",
   );
-  f.cli('package-library.mjs');
+  f.cli('release/release-library.mjs', ['pack']);
   const digest = createHash('sha256').update('packed library').digest('hex');
   assert.equal(
     readFileSync(join(f.root, 'release-assets/sample-library-1.2.3.tgz.sha256'), 'utf8'),
@@ -157,6 +144,30 @@ test('library packaging writes a sha256sum file and removes releases older than 
   );
   assert.equal(existsSync(join(f.root, 'release-assets/sample-library-1.0.0.tgz')), false);
   assert.equal(existsSync(join(f.root, 'release-assets/sample-library-1.2.2.tgz')), true);
+});
+
+test('library packaging uses npm from the active Node installation without a tool override', (t) => {
+  const f = toolFixture(t);
+  f.json('package.json', { name: '@sample/library', version: '1.2.3' });
+  const original = childProcess.execFileSync;
+  childProcess.execFileSync = (command, args, options) => {
+    assert.equal(command, join(dirname(process.execPath), 'npm'));
+    assert.deepEqual(args, ['pack', '--pack-destination', join(f.root, 'release-assets')]);
+    assert.equal(options.cwd, f.root);
+    writeFileSync(join(f.root, 'release-assets/sample-library-1.2.3.tgz'), 'packed library');
+  };
+  syncBuiltinESMExports();
+  try {
+    const archive = packLibrary(f.root);
+    const digest = createHash('sha256').update('packed library').digest('hex');
+    assert.equal(
+      readFileSync(`${archive}.sha256`, 'utf8'),
+      `${digest}  sample-library-1.2.3.tgz\n`,
+    );
+  } finally {
+    childProcess.execFileSync = original;
+    syncBuiltinESMExports();
+  }
 });
 
 test('the packed library works in an isolated Vue, TypeScript, Sass and Node consumer', (t) => {
@@ -182,6 +193,13 @@ test('the packed library works in an isolated Vue, TypeScript, Sass and Node con
     env: process.env,
     timeout: 60000,
   });
+
+  for (const source of globSync('src/styles/**/*.scss')) {
+    const output = join(f.root, 'dist/styles', relative('src/styles', source));
+    assert.deepEqual(readFileSync(output), readFileSync(join(project, source)));
+  }
+  
+  assert.equal(existsSync(join(f.root, 'dist/styles/style.ts')), false);
   const packed = JSON.parse(
     execFileSync(npm, ['pack', '--ignore-scripts', '--pack-destination', output, '--json'], {
       cwd: f.root,
@@ -189,10 +207,11 @@ test('the packed library works in an isolated Vue, TypeScript, Sass and Node con
       env: process.env,
     }),
   );
+
   const filename = packed[0].filename;
   const digest = createHash('sha256')
     .update(readFileSync(join(output, filename)))
     .digest('hex');
   writeFileSync(join(output, `${filename}.sha256`), `${digest}  ${filename}\n`);
-  assert.match(f.cli('test-package.mjs').stdout, /Package verified:/);
+  assert.match(f.cli('pipeline/test-package.mjs').stdout, /Package verified:/);
 });

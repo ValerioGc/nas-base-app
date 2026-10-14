@@ -1,5 +1,3 @@
-# SonarQube for local analysis. The npm start command reuses an existing sonarqube container;
-# this Compose configuration creates it with stable volume names when none exists.
 name: nas-os
 services:
   sonarqube:

@@ -1,8 +1,7 @@
 export type NasTheme = 'light' | 'dark';
 export type NasLocale = 'it' | 'en';
 export type NotificationTone = 'info' | 'success' | 'warning' | 'error';
-export type PaletteRole =
-  'background' | 'foreground' | 'surface' | 'sunken' | 'hover' | 'border' | 'muted';
+export type PaletteRole = 'background' | 'foreground' | 'surface' | 'sunken' | 'hover' | 'border' | 'muted';
 
 export interface AppContext {
   app: string;
@@ -40,7 +39,6 @@ export interface FilePickerOptions {
   folder?: boolean;
   extensions?: string[];
   directory?: string;
-  /** A picker waits for user interaction, so its default timeout is five minutes. */
   timeoutMs?: number;
 }
 
@@ -50,7 +48,6 @@ export interface FilePickerResult {
   error?: string;
 }
 
-/** Envelope for app-specific commands. Apps validate the domain payload in data. */
 export interface NasShellAnswer {
   success: boolean;
   data?: unknown;
@@ -106,7 +103,6 @@ export type NasShellErrorCode =
   'unavailable' | 'timeout' | 'disposed' | 'invalid-response' | 'launcher-error';
 
 export interface NasShellOptions {
-  /** Omit for the browser's window. Null creates a standalone, SSR-safe bridge. */
   view?: Window | null;
   timeoutMs?: number;
 }
@@ -116,7 +112,6 @@ export interface NasShell {
   listen(listener: (message: ShellEvent) => void): () => void;
   ready(): boolean;
   openApp(app: string, location?: string): boolean;
-  /** Asks the launcher to load itself again over HTTPS: an application may not navigate it. */
   openHttps(): boolean;
   notify(title: string, message?: string, tone?: NotificationTone): boolean;
   describeNotifications(notifications: NasNotification[]): boolean;
@@ -136,10 +131,8 @@ export interface NasShell {
 
 export interface NasContextOptions {
   shell?: NasShell;
-  /** Root element receiving theme tokens. Null disables DOM changes. */
   root?: HTMLElement | null;
   locale?: NasLocale;
   theme?: NasTheme;
-  /** Called whenever a supported locale is received. The host owns translations. */
   onLocaleChange?: (locale: NasLocale) => void;
 }

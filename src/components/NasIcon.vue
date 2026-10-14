@@ -1,7 +1,6 @@
 <script setup lang="ts">
 
 interface Props {
-  /** SVG URL returned by a normal Vite import in the consuming component. */
   svg: string;
 }
 defineProps<Props>();

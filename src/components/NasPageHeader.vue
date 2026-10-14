@@ -5,6 +5,7 @@ interface Props {
   overview?: string;
   subtitle?: string;
 }
+
 defineProps<Props>();
 
 </script>
@@ -16,6 +17,10 @@ defineProps<Props>();
       <h1>{{ title }}</h1>
       <p v-if="subtitle" class="subtitle">{{ subtitle }}</p>
     </div>
-    <div v-if="$slots.actions" class="header_actions"><slot name="actions" /></div>
+
+    <!-- Header actions slot -->
+    <div v-if="$slots.actions" class="header_actions">
+      <slot name="actions"></slot>
+    </div>
   </header>
 </template>

@@ -1,7 +1,3 @@
-// Only the thumb of the scrollbar: no arrows and no track. Chromium and Safari draw it through the
-// -webkit- pseudo elements, which a standard `scrollbar-width` or `scrollbar-color` would switch
-// off there, so the standard properties go only to the browsers without them (Firefox), whose thin
-// scrollbar has no arrows either.
 @supports not selector(::-webkit-scrollbar) {
   * {
     scrollbar-color: var(--border) transparent;

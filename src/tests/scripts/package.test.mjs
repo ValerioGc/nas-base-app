@@ -42,7 +42,6 @@ createServer((req, res) => {
 }).listen(process.argv[process.argv.indexOf('--listen') + 1]);
 `;
 
-// Small independent USTAR fixture writer: do not use the checker's parser to make fixtures.
 function tar(entries) {
   const chunks = [];
 
@@ -311,7 +310,7 @@ test('the smoke test gives the application the environment it needs on the NAS',
   const args = [f.archive, '--timeout', '2'];
   await smokeNas(args, f.root, { env: { NAS_SAMPLE: 'yes' } });
   await assert.rejects(smokeNas(args, f.root));
-  // Options alone keep the release archive and the expectations read from the manifest.
+
   mkdirSync(join(f.root, 'release-assets'));
   copyFileSync(f.archive, join(f.root, 'release-assets', basename(f.archive)));
   copyFileSync(
@@ -323,6 +322,22 @@ test('the smoke test gives the application the environment it needs on the NAS',
     smokeNas(['--expected-version', '9.9.9', '--archive-only'], f.root),
     /does not match --expected-version/,
   );
+
+  const smoke = fileURLToPath(new URL('../../../scripts/axium/smoke-nas.mjs', import.meta.url));
+  const cli = (args) =>
+    spawnSync(process.execPath, [smoke, ...args], {
+      cwd: f.root,
+      encoding: 'utf8',
+      timeout: 15000,
+    });
+  const success = cli(['--env', 'NAS_SAMPLE=yes', '--timeout', '2']);
+  assert.ifError(success.error);
+  assert.equal(success.status, 0, success.stderr);
+  assert.match(success.stdout, /PASS runtime:/);
+  const failure = cli(['--expected-version', '9.9.9', '--archive-only']);
+  assert.ifError(failure.error);
+  assert.equal(failure.status, 1);
+  assert.match(failure.stderr, /^FAIL: .*does not match --expected-version/m);
 });
 
 test('one command runs each shared tool from the application root', (t) => {

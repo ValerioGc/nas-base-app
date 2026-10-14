@@ -1,8 +1,8 @@
 #!/usr/bin/env node
+// Test script for the NAS package using only native Node modules.
+
 import { pathToFileURL } from 'node:url';
-// Standalone NAS package checker. Node.js 22.18+, built-in modules only.
-// Full checks execute the packaged application the way the NAS does: on a unix socket handed to
-// it with --listen, never on a port; --archive-only never executes it.
+
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import {
@@ -30,7 +30,9 @@ import { parseArgs } from 'node:util';
 import { gunzipSync } from 'node:zlib';
 
 function check(condition, message) {
-  if (!condition) throw new Error(message);
+  if (!condition){
+    throw new Error(message);
+  }
 }
 
 function packagePath(value) {
@@ -42,22 +44,27 @@ function packagePath(value) {
     !posix.isAbsolute(value) && !value.split('/').includes('..'),
     `Unsafe package path: ${value}`,
   );
+
   return posix.normalize(value).replace(/\/$/, '') || '.';
 }
 
 function packagedFile(root, name) {
   const file = join(root, packagePath(name));
   check(existsSync(file) && statSync(file).isFile(), `Missing packaged file: ${name}`);
+  
   const location = relative(root, realpathSync(file));
   check(location !== '..' && !location.startsWith(`..${sep}`), `Path escapes package: ${name}`);
+  
   return file;
 }
 
 function octal(buffer) {
   const text = tarString(buffer, 'ascii').trim();
   check(/^[0-7]*$/.test(text), 'Unsupported or invalid tar numeric field');
+
   const number = text ? Number.parseInt(text, 8) : 0;
   check(Number.isSafeInteger(number), 'Tar numeric field is too large');
+
   return number;
 }
 
@@ -72,8 +79,10 @@ function paxFields(body) {
   while (offset < body.length) {
     const space = body.indexOf(32, offset);
     check(space > offset, 'Invalid PAX record');
+
     const lengthText = body.subarray(offset, space).toString('ascii');
     check(/^\d+$/.test(lengthText), 'Invalid PAX length');
+    
     const length = Number(lengthText);
     check(
       Number.isSafeInteger(length) &&
@@ -82,19 +91,21 @@ function paxFields(body) {
         body[offset + length - 1] === 10,
       'Invalid PAX length',
     );
+
     const record = body.subarray(space + 1, offset + length - 1).toString('utf8');
     const equals = record.indexOf('=');
     check(equals > 0, 'Invalid PAX field');
+    
     const key = record.slice(0, equals);
     check(!key.startsWith('GNU.sparse'), 'Sparse tar entries are not supported');
+    
     fields[key] = record.slice(equals + 1);
     offset += length;
   }
+
   return fields;
 }
 
-// Read USTAR/PAX and GNU long-name records before writing anything. Extraction is
-// deliberately implemented with filesystem calls, never a shell or a tar subprocess.
 function tarBlock(data, offset, fields) {
   const header = data.subarray(offset, offset + 512);
   const sum = header.reduce(
@@ -102,6 +113,7 @@ function tarBlock(data, offset, fields) {
     0,
   );
   check(sum === octal(header.subarray(148, 156)), 'Invalid tar header checksum');
+
   const type = String.fromCodePoint(header[156] || 48);
   const extension = ['x', 'g', 'L', 'K'].includes(type);
   const size =
@@ -112,6 +124,7 @@ function tarBlock(data, offset, fields) {
     Number.isSafeInteger(size) && size >= 0 && offset + 512 + size <= data.length,
     'Invalid or truncated tar entry',
   );
+
   return {
     header,
     type,
@@ -137,6 +150,7 @@ function tarExtension(type, body) {
 function tarEntryName(header, fields) {
   const prefix =
     header.subarray(257, 263).toString() === 'ustar\0' ? tarString(header.subarray(345, 500)) : '';
+  
   return packagePath(
     fields.path ?? [prefix, tarString(header.subarray(0, 100))].filter(Boolean).join('/'),
   );
@@ -158,21 +172,30 @@ function tarEntries(data) {
       terminated = true;
       break;
     }
+
     const fields = { ...globalFields, ...nextFields };
     const { type, body, next } = tarBlock(data, offset, fields);
     offset = next;
+
     const extension = tarExtension(type, body);
     if (extension) {
-      if (extension.global) globalFields = { ...globalFields, ...extension.fields };
-      else nextFields = { ...nextFields, ...extension.fields };
+      if (extension.global){
+        globalFields = { ...globalFields, ...extension.fields };
+      }
+      else {
+        nextFields = { ...nextFields, ...extension.fields };
+      }
+
       continue;
     }
+
     const name = tarEntryName(header, fields);
     const mode = octal(header.subarray(100, 108));
     check(['0', '1', '2', '5'].includes(type), `Unsupported archive entry: ${name}`);
     check(!(mode & 0o6000), `Privileged file mode: ${name}`);
     check(!entries.has(name), `Duplicate archive path: ${name}`);
     check(name !== '.' || type === '5', 'Archive root must be a directory');
+    
     entries.set(name, {
       name,
       type,
@@ -183,11 +206,15 @@ function tarEntries(data) {
     nextFields = {};
   }
   check(terminated && Object.keys(nextFields).length === 0, 'Truncated tar archive');
+
   return entries;
 }
 
+/**
+ * Checks that all parent directories of archive entries are themselves directories.
+ * @param {Map<string, { name: string, type: string, mode: number, body: Uint8Array, target?: string }>} entries 
+ */
 function checkArchiveParents(entries) {
-  // No entry may be written underneath a file or link, regardless of archive order.
   for (const { name } of entries.values()) {
     for (let parent = posix.dirname(name); parent !== '.'; parent = posix.dirname(parent)) {
       check(
@@ -204,12 +231,16 @@ function resolveLink(entries, name, depth = 0) {
   const pending = name.split('/');
   while (pending.length) {
     const part = pending.shift();
-    if (!part || part === '.') continue;
+    if (!part || part === '.'){ 
+      continue; 
+    }
+
     if (part === '..') {
       check(resolved.length, 'Archive link escapes package');
       resolved.pop();
       continue;
     }
+    
     resolved.push(part);
     const entry = entries.get(resolved.join('/'));
     if (['1', '2'].includes(entry?.type)) {
@@ -217,10 +248,13 @@ function resolveLink(entries, name, depth = 0) {
         entry.target && !/[\\\0]/.test(entry.target) && !posix.isAbsolute(entry.target),
         `Unsafe archive link: ${entry.name}`,
       );
+
       const base = entry.type === '2' ? resolved.slice(0, -1) : [];
+
       return resolveLink(entries, [...base, entry.target, ...pending].join('/'), depth + 1);
     }
   }
+
   return resolved.join('/') || '.';
 }
 
@@ -229,11 +263,14 @@ function archiveLinks(entries) {
   for (const entry of entries.values()) {
     if (['1', '2'].includes(entry.type)) {
       const target = resolveLink(entries, entry.name);
-      if (entry.type === '1')
+      if (entry.type === '1') {
         check(entries.get(target)?.type === '0', `Invalid hardlink target: ${entry.name}`);
+      }
+      
       links.set(entry.name, target);
     }
   }
+
   return links;
 }
 
@@ -242,19 +279,30 @@ function extract(entries, root) {
   const links = archiveLinks(entries);
   for (const entry of entries.values()) {
     const destination = join(root, entry.name);
-    if (entry.type === '5') mkdirSync(destination, { recursive: true });
+    if (entry.type === '5'){ 
+      mkdirSync(destination, { recursive: true });
+    }
+    
     if (entry.type === '0') {
       mkdirSync(dirname(destination), { recursive: true });
       writeFileSync(destination, entry.body, { flag: 'wx', mode: (entry.mode & 0o755) | 0o600 });
       chmodSync(destination, (entry.mode & 0o755) | 0o600);
     }
   }
+
   for (const entry of entries.values()) {
-    if (!links.has(entry.name)) continue;
+    if (!links.has(entry.name)){
+      continue;
+    }
+
     const destination = join(root, entry.name);
     mkdirSync(dirname(destination), { recursive: true });
-    if (entry.type === '1') linkSync(join(root, links.get(entry.name)), destination);
-    else symlinkSync(entry.target, destination);
+
+    if (entry.type === '1'){
+      linkSync(join(root, links.get(entry.name)), destination);
+    } else {
+      symlinkSync(entry.target, destination);
+    }
   }
 }
 
@@ -270,12 +318,17 @@ function validateIdentity(root, manifest, args) {
     typeof version === 'string' && /^\d+(?:\.\d+)*(?:-[\dA-Za-z.-]+)?$/.test(version),
     'Invalid app.version',
   );
-  if (args['expected-id']) check(id === args['expected-id'], 'app.id does not match --expected-id');
-  if (args['expected-version'])
+
+  if (args['expected-id']){
+     check(id === args['expected-id'], 'app.id does not match --expected-id');
+  }
+  if (args['expected-version']){
     check(
       version === args['expected-version'].replace(/^v/, ''),
       'app.version does not match --expected-version',
     );
+  }
+
   const escaped = version.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
   check(
     new RegExp(String.raw`(?<![\dA-Za-z])${escaped}(?![\dA-Za-z]|\.\d)`).test(
@@ -283,29 +336,31 @@ function validateIdentity(root, manifest, args) {
     ),
     'Archive name must carry the manifest version',
   );
-  if (args['asset-template'])
-    // Only {version}: the catalogue of the NAS substitutes that and nothing else, so a template
-    // carrying anything more would pass here and fail the real installation.
+
+  if (args['asset-template']){
     check(
       basename(args.archive) === args['asset-template'].replaceAll('{version}', version),
       'Archive name does not match --asset-template',
     );
+  }
+
   if (icon !== undefined) {
     check(typeof icon === 'string' && icon, 'app.icon must be a packaged path');
     packagedFile(root, icon);
   }
+
   const executable = packagedFile(root, manifest.run.exec);
   check(statSync(executable).mode & 0o111, 'run.exec is not executable');
-  // Declaring it is optional (the launcher derives the path from the id whatever the file says),
-  // but declaring a different one is a lie about where the application will be reached.
   check(
     manifest.run.socket === undefined || manifest.run.socket === `/run/nas-os/apps/${id}.sock`,
     'run.socket must be /run/nas-os/apps/<id>.sock, or absent',
   );
+  
   check(
     manifest.ui?.protocol === undefined || manifest.ui.protocol === 1,
     'Expected ui.protocol 1',
   );
+
   return executable;
 }
 
@@ -344,7 +399,7 @@ function validateCapability(capability) {
     Number.isInteger(capability.version) && capability.version > 0,
     'Invalid capability version',
   );
-  // Only the launcher calls these, so they answer where the proxy serves no browser.
+
   const internal = ['mail-events', 'cache', 'trash'].includes(capability.capability);
   check(
     typeof capability.endpoint === 'string' &&
@@ -364,11 +419,15 @@ function validateManifest(root, args) {
   check(existsSync(join(root, 'nas-app.json')), 'nas-app.json missing at archive root');
   const manifest = JSON.parse(readFileSync(packagedFile(root, 'nas-app.json'), 'utf8'));
   check(object(manifest), 'Manifest must be a JSON object');
-  // app and run are what the NAS cannot do without: the identity, and the program to execute.
-  for (const field of ['app', 'run']) check(object(manifest[field]), `${field} must be an object`);
-  // The rest is optional, exactly as the launcher reads it, and checked when it is declared.
-  for (const field of ['ui', 'permissions'])
+
+  for (const field of ['app', 'run']){
+    check(object(manifest[field]), `${field} must be an object`);
+  }
+
+  for (const field of ['ui', 'permissions']){
     check(manifest[field] === undefined || object(manifest[field]), `${field} must be an object`);
+  }
+
   check(manifest.manifest_version === 1, 'Expected manifest_version 1');
   const executable = validateIdentity(root, manifest, args);
   validatePermissions(manifest);
@@ -376,9 +435,11 @@ function validateManifest(root, args) {
     manifest.provides === undefined || Array.isArray(manifest.provides),
     'provides must be an array',
   );
+
   for (const capability of manifest.provides ?? []) {
     validateCapability(capability);
   }
+  
   return { manifest, executable };
 }
 
@@ -389,6 +450,7 @@ function unpack(args, root) {
     match?.[2] === basename(args.archive),
     'Checksum must use sha256sum format and name this archive',
   );
+
   const limit = args['max-unpacked-mib'] * 1024 * 1024;
   check(statSync(args.archive).size <= limit, 'Archive exceeds --max-unpacked-mib');
   const compressed = readFileSync(args.archive);
@@ -396,27 +458,30 @@ function unpack(args, root) {
     createHash('sha256').update(compressed).digest('hex') === match[1].toLowerCase(),
     'SHA-256 checksum mismatch',
   );
+
   const data =
     compressed[0] === 0x1f && compressed[1] === 0x8b
       ? gunzipSync(compressed, { maxOutputLength: limit })
       : compressed;
+
   extract(tarEntries(data), root);
   return validateManifest(root, args);
 }
 
-// What the launcher will connect to is a unix socket named after the application; a TCP port is
-// a door around the launcher, so finding one open is a failure and not a detail.
 function processGroup(pid) {
-  // The whole process group, not just the child: an application is free to hold its socket in a
-  // worker, and a port opened by one would be just as open.
   return readdirSync('/proc').filter((entry) => {
-    if (!/^\d+$/.test(entry)) return false;
+    if (!/^\d+$/.test(entry)){
+      return false;
+    }
+
     try {
-      // The fields after the command, which is in parentheses and may contain spaces itself.
       const stat = readFileSync(`/proc/${entry}/stat`, 'utf8');
       return Number(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[2]) === pid;
     } catch (error) {
-      if (error.code === 'ENOENT' || error.code === 'ESRCH') return false;
+      if (error.code === 'ENOENT' || error.code === 'ESRCH') {
+        return false;
+      }
+
       throw error;
     }
   });
@@ -428,15 +493,23 @@ function processInodes(member) {
   try {
     descriptors = readdirSync(`/proc/${member}/fd`);
   } catch (error) {
-    if (error.code === 'ENOENT' || error.code === 'EACCES') return inodes;
+    if (error.code === 'ENOENT' || error.code === 'EACCES'){
+      return inodes;
+    } 
+
     throw error;
   }
+
   for (const descriptor of descriptors) {
     try {
       const match = /^socket:\[(\d+)\]$/.exec(readlinkSync(`/proc/${member}/fd/${descriptor}`));
-      if (match) inodes.add(match[1]);
+      if (match){
+        inodes.add(match[1]);
+      }
     } catch (error) {
-      if (error.code !== 'ENOENT') throw error;
+      if (error.code !== 'ENOENT'){ 
+        throw error; 
+      }
     }
   }
   return inodes;
@@ -444,10 +517,12 @@ function processInodes(member) {
 
 function checkTcpListeners(pid, inodes) {
   for (const table of ['tcp', 'tcp6']) {
-    for (const line of readFileSync(`/proc/${pid}/net/${table}`, 'utf8')
+    let lines = readFileSync(`/proc/${pid}/net/${table}`, 'utf8')
       .trim()
       .split('\n')
-      .slice(1)) {
+      .slice(1);
+
+    for (const line of lines) {
       const fields = line.trim().split(/\s+/);
       check(
         fields[3] !== '0A' || !inodes.has(fields[9]),
@@ -460,9 +535,10 @@ function checkTcpListeners(pid, inodes) {
 function checkListener(pid, socket) {
   const group = processGroup(pid);
   check(group.length, 'The application is no longer running');
+
   const inodes = new Set(group.flatMap((member) => [...processInodes(member)]));
   checkTcpListeners(pid, inodes);
-  // Num RefCount Protocol Flags Type St Inode Path, and 00010000 is the listening flag.
+
   const wanted = realpathSync(dirname(socket)) + sep + basename(socket);
   const listening = readFileSync(`/proc/${pid}/net/unix`, 'utf8')
     .trim()
@@ -473,16 +549,18 @@ function checkListener(pid, socket) {
       (fields) =>
         fields[3] === '00010000' && inodes.has(fields[6]) && fields.slice(7).join(' ') === wanted,
     );
+
   check(listening, 'The unix socket is not listened on by the declared executable');
 }
 
 function decodeAttribute(value) {
   return value.replace(/&(?:#(x[\da-f]+|\d+)|amp|quot|apos|lt|gt);/gi, (all, code) => {
     if (code) {
-      const number =
-        code[0].toLowerCase() === 'x' ? Number.parseInt(code.slice(1), 16) : Number(code);
-      return String.fromCodePoint(number);
+      const number = code[0].toLowerCase() === 'x' ? Number.parseInt(code.slice(1), 16) : Number(code);
+      
+        return String.fromCodePoint(number);
     }
+
     return { '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>' }[
       all.toLowerCase()
     ];
@@ -501,6 +579,7 @@ function tagEnd(html, start) {
       return index;
     }
   }
+
   return html.length;
 }
 
@@ -513,14 +592,24 @@ function attributeValue(text, start) {
       next: end < 0 ? text.length : end + 1,
     };
   }
+
   let end = start;
-  while (end < text.length && !/[\s>]/.test(text[end])) end++;
-  return { value: text.slice(start, end), next: end };
+  while (end < text.length && !/[\s>]/.test(text[end])){
+    end++;
+  }
+
+  return { 
+    value: text.slice(start, end), 
+    next: end 
+  };
 }
 
 function skipWhitespace(text, start) {
   let index = start;
-  while (index < text.length && /\s/.test(text[index])) index++;
+  while (index < text.length && /\s/.test(text[index])){
+    index++;
+  }
+
   return index;
 }
 
@@ -532,23 +621,37 @@ function htmlAttributes(text) {
       index++;
       continue;
     }
+
     const start = index;
-    while (index < text.length && !/[\s=]/.test(text[index])) index++;
+    while (index < text.length && !/[\s=]/.test(text[index])){
+      index++;
+    }
+
     const name = text.slice(start, index).toLowerCase();
     index = skipWhitespace(text, index);
-    if (text[index] !== '=') continue;
+    if (text[index] !== '='){
+      continue;
+    }
+
     index++;
     index = skipWhitespace(text, index);
+    
     const { value, next } = attributeValue(text, index);
     index = next;
-    if (name) attributes[name] = decodeAttribute(value);
+    if (name){
+      attributes[name] = decodeAttribute(value);
+    }
   }
+
   return attributes;
 }
 
 function readHtmlTag(html, start) {
   let nameEnd = start + 1;
-  while (nameEnd < html.length && /[\w:-]/.test(html[nameEnd])) nameEnd++;
+  while (nameEnd < html.length && /[\w:-]/.test(html[nameEnd])){
+    nameEnd++;
+  }
+
   return {
     name: html.slice(start + 1, nameEnd).toLowerCase(),
     nameEnd,
@@ -566,17 +669,22 @@ function* htmlTags(html) {
   let index = 0;
   while (index < html.length) {
     const start = html.indexOf('<', index);
-    if (start < 0) return;
+    if (start < 0){
+      return;
+    }
+    
     if (html.startsWith('<!--', start)) {
       const end = html.indexOf('-->', start + 4);
       index = end < 0 ? html.length : end + 3;
       continue;
     }
+    
     const { name, nameEnd, end } = readHtmlTag(html, start);
     index = end + 1;
     if (['script', 'img', 'source', 'link'].includes(name)) {
       yield { name, attributes: htmlAttributes(html.slice(nameEnd, end)) };
     }
+    
     if (name === 'script') {
       index = afterScript(html, index);
     }
@@ -586,7 +694,10 @@ function* htmlTags(html) {
 function htmlAssets(html) {
   const urls = new Set();
   for (const { name, attributes } of htmlTags(html)) {
-    if (name !== 'link' && attributes.src) urls.add(attributes.src);
+    if (name !== 'link' && attributes.src){
+      urls.add(attributes.src);
+    }
+
     if (
       name === 'link' &&
       attributes.href &&
@@ -598,11 +709,10 @@ function htmlAssets(html) {
       urls.add(attributes.href);
     }
   }
+
   return urls;
 }
 
-// One HTTP request over the unix socket. `fetch` does not speak unix, and the application is not
-// reachable any other way, which is the whole point of the contract.
 function fetchOverSocket(socket, path, timeout) {
   return new Promise((accept, reject) => {
     const call = httpRequest({ socketPath: socket, path, method: 'GET', timeout }, (response) => {
@@ -617,6 +727,7 @@ function fetchOverSocket(socket, path, timeout) {
         }),
       );
     });
+
     call.once('timeout', () => call.destroy(new Error('the application did not answer in time')));
     call.once('error', reject);
     call.end();
@@ -624,14 +735,14 @@ function fetchOverSocket(socket, path, timeout) {
 }
 
 async function checkAssets(uiPath, html, get) {
-  // A synthetic origin for URL resolution, never a network destination.
   const origin = 'https://application.invalid';
   let checkedAssets = 0;
   for (const asset of htmlAssets(html)) {
-    // The application is served at the root of its own origin: an absolute URL somewhere else
-    // is somebody else's business, a relative one has to be in the package.
     const url = new URL(asset, new URL(uiPath, origin));
-    if (url.origin !== origin) continue;
+    if (url.origin !== origin){ 
+      continue;
+    }
+
     const result = await get(url.pathname + url.search);
     check(
       result.body.length && result.mime !== 'text/html',
@@ -639,14 +750,14 @@ async function checkAssets(uiPath, html, get) {
     );
     checkedAssets++;
   }
+
   return checkedAssets;
 }
 
 async function smokeTest(args, manifest, executable) {
   const cwd = mkdtempSync(join(tmpdir(), 'nas-cwd-'));
   const socket = join(cwd, `${manifest.app.id}.sock`);
-  // A unix socket path is a fixed field in the kernel: on the NAS it is nowhere near the limit,
-  // in a temporary directory it can be, and the error the kernel gives back says only EINVAL.
+
   check(Buffer.byteLength(socket) <= 107, `Socket path is too long for a unix socket: ${socket}`);
   async function get(path) {
     check(path.startsWith('/'), `Expected an origin-relative URL: ${path}`);
@@ -654,26 +765,29 @@ async function smokeTest(args, manifest, executable) {
     check(response.status === 200, `${path}: expected HTTP 200, received ${response.status}`);
     return response;
   }
+
   const environment = {
     ...process.env,
     NAS_APP_ID: manifest.app.id,
     NAS_APP_SOCKET: socket,
     NAS_DB_PATH: join(cwd, 'app.sqlite3'),
   };
+
   for (const item of args.env) {
     const equals = item.indexOf('=');
     check(equals > 0, 'Invalid --env');
     environment[item.slice(0, equals)] = item.slice(equals + 1);
   }
+
   const logPath = join(cwd, 'application.log');
   const log = openSync(logPath, 'w');
-  // Exactly how the NAS starts it: run-app.sh execs the program with the socket to listen on.
   const child = spawn(executable, ['--listen', socket], {
     cwd,
     env: environment,
     detached: true,
     stdio: ['ignore', log, log],
   });
+
   let stopped = false;
   let spawnError;
   const exit = new Promise((accept) => {
@@ -687,6 +801,7 @@ async function smokeTest(args, manifest, executable) {
       accept({ code, signal });
     });
   });
+
   const cancel = () => child.kill('SIGTERM');
   process.once('SIGINT', cancel);
   process.once('SIGTERM', cancel);
@@ -707,6 +822,7 @@ async function smokeTest(args, manifest, executable) {
         await delay(100);
       }
     }
+
     check(ui, `UI did not become ready: ${lastError}`);
     check(ui.mime === 'text/html' && ui.body.toString().trim(), 'UI must serve nonempty HTML');
     checkListener(child.pid, socket);
@@ -715,13 +831,15 @@ async function smokeTest(args, manifest, executable) {
       const result = await get(path);
       check(result.mime === 'application/json', `${path}: expected JSON`);
       const value = JSON.parse(result.body.toString());
-      if (args['version-field'])
+      if (args['version-field']) {
         check(
           value?.[args['version-field']] === manifest.app.version,
           `${path}: runtime version differs from manifest`,
         );
+      }
     }
     check(!stopped, 'Application stopped during smoke test');
+    
     child.kill('SIGTERM');
     const result = await Promise.race([exit, delay(5000, null, { ref: false })]);
     check(result, 'Application did not stop within 5 seconds of SIGTERM');
@@ -729,6 +847,7 @@ async function smokeTest(args, manifest, executable) {
       result.code === 0 || result.signal === 'SIGTERM',
       `Unexpected shutdown exit: ${result.code ?? result.signal}`,
     );
+    
     console.log(
       `PASS runtime: unix socket, UI, ${checkedAssets} local assets, ${args['api-path'].length} API endpoint(s), no TCP listener, SIGTERM shutdown`,
     );
@@ -739,7 +858,9 @@ async function smokeTest(args, manifest, executable) {
     process.removeListener('SIGINT', cancel);
     process.removeListener('SIGTERM', cancel);
     try {
-      if (child.pid) process.kill(-child.pid, 'SIGKILL');
+      if (child.pid){
+        process.kill(-child.pid, 'SIGKILL');
+      }
     } catch (error) {
       if (error.code !== 'ESRCH') {
         console.error(`FAIL: unable to clean up process group: ${error.message}`);
@@ -747,6 +868,7 @@ async function smokeTest(args, manifest, executable) {
         child.kill('SIGKILL');
       }
     }
+
     await exit;
     closeSync(log);
     rmSync(cwd, { recursive: true, force: true });
@@ -794,6 +916,7 @@ export async function testNasPackage(argv = [], projectRoot = process.cwd()) {
     console.log(help);
     return;
   }
+
   check(positionals.length <= 1, help);
   const archive =
     positionals[0] ??
@@ -801,8 +924,10 @@ export async function testNasPackage(argv = [], projectRoot = process.cwd()) {
       const { id, version } = JSON.parse(
         readFileSync(join(projectRoot, 'nas-app.json'), 'utf8'),
       ).app;
+  
       return join('release-assets', `${id}-${version}-linux-${process.arch}.tar.gz`);
     })();
+  
   const args = {
     ...values,
     archive: resolve(projectRoot, archive),
@@ -816,6 +941,7 @@ export async function testNasPackage(argv = [], projectRoot = process.cwd()) {
     Number.isSafeInteger(args['max-unpacked-mib']) && args['max-unpacked-mib'] > 0,
     'Invalid size limit',
   );
+  
   const root = mkdtempSync(join(tmpdir(), 'nas-install-'));
   try {
     const { manifest, executable } = unpack(args, root);

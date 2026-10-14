@@ -1,7 +1,5 @@
 name: Publish
 
-# A tag vX.Y.Z, pushed by `npm run release:merge`, publishes that version to GitHub Packages after
-# the same gate the release ran locally.
 on:
   push:
     tags: ['v*.*.*']
@@ -29,20 +27,6 @@ jobs:
           cache: npm
           registry-url: https://npm.pkg.github.com
           scope: '@valeriogc'
-      - name: Prepare and verify tool permissions
-        run: |
-          sudo /bin/bash .github/scripts/prepare-tools.sh \
-            --node "$(node -p 'process.execPath')" \
-            --cargo-home "${CARGO_HOME:-$HOME/.cargo}" \
-            --runner-uid "$(id -u)" \
-            --tool-cache "$RUNNER_TOOL_CACHE"
-          node --input-type=module -e '
-            import { toolEnvironment, toolPath, execToolSync } from "./scripts/process-tools.mjs";
-            toolEnvironment();
-            for (const tool of ["npm", "git"]) toolPath(tool);
-            execToolSync("npm", ["--version"], { stdio: "inherit" });
-            execToolSync("git", ["--version"], { stdio: "inherit" });
-          '
       - name: Verify tag, version and changelog
         run: npm run release:check -- "${GITHUB_REF_NAME}"
       - name: Install npm dependencies

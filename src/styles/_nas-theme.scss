@@ -1,4 +1,3 @@
-// Defaults for standalone apps. Launcher context overrides these tokens inline.
 :root {
   color-scheme: light;
   --nas-background: #f5f7f6;
@@ -10,10 +9,8 @@
   --nas-muted: #526776;
   --nas-accent: #12866f;
   --accent: var(--nas-accent);
-  // Text on the accent: the surface of the theme, as the launcher's palette sets it.
   --on-accent: var(--nas-surface);
 
-  // Compatibility tokens used by existing NAS app classes.  --bg: var(--nas-background);
   --app-bg: var(--nas-background);
   --text: var(--nas-foreground);
   --surface: var(--nas-surface);
@@ -58,7 +55,6 @@
   --nas-accent: #3fd39b;
 }
 
-// Keep the iframe canvas transparent while native controls follow the selected theme.
 :root[data-nas-shell='true'][data-theme] {
   color-scheme: normal;
   background: transparent;

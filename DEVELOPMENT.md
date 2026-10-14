@@ -1,74 +1,75 @@
-# Sviluppo di nas-base-app
+# Developing nas-base-app
 
-Le app di `../external-apps` la usano come dipendenza `@valeriogc/nas-base-app`, la versione
-pubblicata su GitHub Packages. Per provare una modifica prima di pubblicarla: `pnpm run build` qui
-e, nell'app, temporaneamente `file:../../nas-base-app` con `pnpm install --force`. Non eseguire
-comandi Git né creare una `.git`. La pubblicazione è il tag di `release:merge`.
+The projects in `../external-apps` depend on the published `@valeriogc/nas-base-app` package.
+To try a change locally, build the library and temporarily use `file:../../nas-base-app` in the
+app with `pnpm install --force`. Restore the published version before committing the app.
+Do not run Git commands or create a `.git` directory. Publishing is triggered by the tag
+created by `release:merge`.
 
-## Struttura
+## Structure
 
-- `src/components/NasIcon.vue`, `NasLoading.vue`, `NasSwitch.vue`: controlli comuni con stili SCSS globali.
-- `src/components/NasPageHeader.vue`, `NasModal.vue`, `NasNumberStepper.vue`: intestazione, dialogo e controllo numerico senza logica di dominio.
-- `src/components/NasPagination.vue`: navigazione di pagine con modello numerico, etichette fornite dall'app e stili SCSS globali; disponibile per le integrazioni future.
-- `src/components/NasConfirmDialog.vue`, `NasEmptyState.vue`: conferma compatta e contenitore degli stati vuoti ricavati dal confronto completo di `external-apps`.
-- `src/directives/nativeModal.ts`: ciclo di vita del dialogo nativo.
-- `src/services/frameGuard.ts`, `palette.ts`: protezioni iframe e palette.
-- `src/services/i18n.ts`, `documents.ts`, `format.ts`, `schedule.ts`, `powerSchedule.ts`: lingua,
-  documenti salvati dal backend, dimensioni, testi delle pianificazioni e intervalli di spegnimento.
-- `src/components/NasAppLayout.vue`: layout, categorie e richiesta di chiusura locale.
-- `src/services/nasShell.ts`: transport del protocollo iframe v1 e ciclo di vita delle richieste.
-- `src/services/randomUuid.ts`: UUID v4 con casualità crittografica anche senza `crypto.randomUUID`.
-- `src/services/protocol.ts`: validazione dei payload ricevuti.
-- `src/composables/useNasLauncherContext.ts`: contesto reattivo, tema e cleanup Vue.
-- `src/types/`: contratti pubblici, esportati da `src/index.ts`.
-- `src/styles/main.scss`: ingresso degli stili completi, esportato come `nas-base-app/styles.scss`.
-- `src/styles/_nas-theme.scss`: palette chiara/scura, token del launcher e alias delle app.
-- `src/styles/_nas-*.scss`: layout, classi comuni, controlli e scrollbar.
-- `src/styles/global.scss` e `partials/`: variabili, mixin e placeholder riusabili senza regole globali.
-- `src/tests/`: test unitari, componenti e script, esclusi dal pacchetto.
-- `scripts/index.mjs`: ingresso Node importabile per gli strumenti comuni delle app.
-- `scripts/cli.mjs`: il comando `nas-base-app <comando>`, che esegue la CLI del modulo scelto.
-- `scripts/backend-paths.mjs`: rilevamento dei due layout Cargo presenti negli originali (workspace Axum e crate diretto di Picture).
-- `scripts/build/`: plugin Vite condivisi e `nasPurgeSafelist`, compilati in `dist/vite` da
-  `tsconfig.vite.json` ed esportati come `@valeriogc/nas-base-app/vite`.
-- `scripts/axium/`: avvio backend, packaging NAS e checker standalone.
-- `scripts/pipeline/`: versioni, changelog, verifiche, copertura Rust e Sonar.
-- `scripts/`: formatter SFC, lockfile, packaging e rilascio della libreria (`package-library.mjs`,
-  `test-package.mjs`, `release-library.mjs`, esclusi dal pacchetto).
+- `src/components/`: shared layout, headings, dialogs, icons, loading, switches, steppers,
+  pagination, confirmation and empty states. Components contain no app domain logic.
+- `src/directives/nativeModal.ts`: native dialog lifecycle.
+- `src/services/`: iframe behavior, palette, launcher transport, payload validation, UUIDs,
+  i18n, backend documents, formatting, schedules and power intervals.
+- `src/composables/useNasLauncherContext.ts`: reactive launcher context, theme and cleanup.
+- `src/types/`: public contracts exported from `src/index.ts`.
+- `src/styles/main.scss`: full stylesheet exported as `@valeriogc/nas-base-app/styles.scss`.
+- `src/styles/global.scss` and `partials/`: reusable Sass variables, mixins and placeholders.
+- `src/styles/_nas-*.scss`: theme, layout, controls and component classes.
+- `src/tests/`: unit, component and script tests, excluded from the npm package.
+- `scripts/cli.mjs`: the `nas-base-app <command>` entry point.
+- `scripts/index.mjs`: importable Node helpers, separate from the browser entry point.
+- `scripts/dev/`: SFC formatting and npm lockfile synchronization.
+- `scripts/build/`: Vite plugins and the purge safelist, compiled into `dist/vite`.
+- `scripts/axium/`: backend paths and startup, NAS packaging, standalone checker and smoke test.
+- `scripts/pipeline/`: release checks, changelog extraction, asset pruning and library package
+  verification. `test-package.mjs` is excluded from the npm package.
+- `scripts/release/`: local version updates, merge/tag workflow and library release orchestration.
+  `release-library.mjs` is excluded from the npm package.
 
-Vue è esternalizzata dalla build Vite; non aggiungere una seconda copia al bundle.
-`vue-tsc` produce dichiarazioni in `dist/types`, senza plugin di generazione aggiuntivi.
-Il pacchetto è ESM e gli stili vengono importati esplicitamente dall'app come SCSS.
-`package-styles.mjs` copia gli SCSS in `dist/styles`, mantenendo tutti gli import relativi.
-La compilazione Sass avviene nell'app consumatrice, senza dipendenze dai progetti fratelli.
+Vue is externalized by Vite. `vue-tsc` emits declarations into `dist/types`, without another
+plugin for declaration generation. The package is ESM; apps explicitly import its SCSS.
+The Vite build copies SCSS into `dist/styles`, preserving relative imports and excluding
+non-style sources. The app compiles Sass, without dependencies on sibling projects.
 
-## Convenzioni
+`nas:package` calls `scripts/release/release-library.mjs pack` to create the npm archive and
+SHA256 file. Shared app packaging creates a separate NAS archive containing the built frontend,
+backend binary, manifest and launcher entry point.
 
-Usare TypeScript strict senza `any`, import type-only e SFC con `<script setup lang="ts">`.
-Props nel componente, contratti condivisi in `src/types`, stato a due vie con `defineModel`.
-I testi UI sono proprietà fornite dall'app. Le icone sono asset SVG importati dal componente
-chiamante e passati a `NasIcon` tramite `svg`, senza componenti intermedi con mappe di nomi. Usare sempre file `.scss` per i sorgenti degli stili.
-Gli stili comuni dell'app sono globali e stanno nell'ingresso SCSS esplicito; il componente
-NasAppLayout usa le stesse classi disponibili nel markup dell'app. Gli eventuali stili specifici
-di altri componenti restano scoped SCSS. Nomi CSS con `_`, valori comuni nella partial variables.
-Non usare il carattere U+2014.
-Evitare effetti globali al momento dell'importazione e ripulire listener e timer allo smontaggio.
+## Conventions
 
-I test devono verificare comportamento osservabile: selezione delle categorie, eventi, messaggi
-accettati o scartati, risposte correlate, timeout, cleanup, aggiornamenti del contesto.
-I selettori nei test componenti usano elementi semantici o testo.
+Use strict TypeScript without `any`, type-only imports and `<script setup lang="ts">` SFCs.
+Keep props in the component, public contracts in `src/types`, and two-way state in `defineModel`.
+Apps supply UI text and translations. Import SVG assets in the consuming component and pass
+them to `NasIcon` through `svg`; do not add icon-name registries or wrapper components.
+Use SCSS for style sources and underscores in CSS class names.
 
-## Dipendenze e lockfile
+Documentation, identifiers, test descriptions and runtime diagnostic messages are in English.
+Keep useful code comments in Italian; explain contracts or non-obvious decisions and remove
+comments that repeat the code. Do not use U+2014.
 
-Lo stack iniziale riprende quello già usato dalle applicazioni NAS. Nessuna dipendenza runtime
-oltre alla peer Vue. Per nuove dipendenze oltre a questo stack, proporle prima di aggiungerle.
+Shared styles are global and loaded through the explicit SCSS entry. Component-specific styles
+can remain scoped and use the shared Sass helpers. When adding classes or elements to a component,
+update `nasPurgeSafelist`. Avoid global side effects on import and clean up owned listeners and
+timers when their lifecycle ends.
 
-In locale usare `pnpm install`; `postinstall` sincronizza `package-lock.json` tramite
-`scripts/npm-lock.mjs`. Le pipeline possono usare `npm ci`. Dopo `pnpm add/update/remove`, eseguire
-`pnpm run lock:npm`. Non modificare manualmente `package-lock.json`.
-`pnpm-lock.yaml` resta locale. `lint` controlla anche l'allineamento delle peer dependencies.
+Tests should cover observable behavior: selection, events, accepted and rejected messages,
+correlated replies, timeouts, cleanup and context updates. Component tests use semantic elements
+or visible text.
 
-## Verifiche
+## Dependencies and lockfiles
+
+Keep the existing Vue/TypeScript/Node stack. Vue is the only runtime peer dependency.
+Propose additional dependencies before adding them.
+
+Use pnpm locally. `postinstall` synchronizes `package-lock.json` through
+`scripts/dev/npm-lock.mjs`; CI uses `npm ci`. After `pnpm add`, `update` or `remove`, run
+`pnpm run lock:npm`. Do not edit npm or Cargo lockfiles by hand. `pnpm-lock.yaml` remains local.
+`lint` also checks that the npm lockfile matches dependencies and peer dependencies.
+
+## Checks
 
 ```bash
 pnpm run format
@@ -78,50 +79,47 @@ pnpm run nas:package
 pnpm run nas:test
 ```
 
-`pnpm run release:test` le esegue tutte, con il controllo dei metadati della release.
+`release:test` runs the full library release checks, including metadata, coverage and package
+verification. `format` runs Prettier, ESLint fixes and the SFC formatter. `format:check` leaves
+sources unchanged. Vue files are handled by the SFC formatter because their required blank
+lines are not preserved by Prettier alone.
 
-`format` usa Prettier, ESLint e il formatter SFC per mantenere le righe vuote richieste nei blocchi
-script/style. `format:check` non modifica i file.
-La smoke test estrae l'archivio in una directory temporanea e usa la peer Vue installata localmente,
-poi verifica le dichiarazioni, compila gli SCSS e il consumer con Vite e prova l'importazione
-Node senza DOM, l'ingresso degli strumenti (`/scripts`), i plugin (`/vite`) e il comando
-`nas-base-app`. `styles/global.scss` deve restare privo di regole emesse, per evitare di
-duplicare gli stili condivisi negli SFC che usano soltanto gli helper Sass.
-Non avvia processi NAS e non verifica un launcher reale.
+The package check extracts an archive into a temporary consumer and uses the locally installed
+Vue peer. It checks declarations, compiles SCSS and the Vue consumer, imports the package without
+a DOM, and checks the Node helpers, Vite plugins and CLI. `styles/global.scss` must emit no CSS,
+so component imports of Sass helpers do not duplicate global rules. These checks do not run a
+NAS launcher.
 
-## SonarQube locale
+## Local SonarQube
 
 ```bash
-pnpm run podman:sonar:up
-export SONAR_TOKEN='<token del progetto nas-base-app>'
-pnpm run test:sonar
+npm run podman:sonar:up
+export SONAR_TOKEN='<project token>'
+npm run test:sonar
 ```
 
-La scansione usa `sonar-project.properties` e il server su `http://127.0.0.1:9000`, condiviso con
-le altre repo. `SONAR_HOST_URL` permette di scegliere un server diverso. Il token rimane nella
-variabile d'ambiente; non salvarlo nei file di configurazione.
+Sonar commands are defined directly in `package.json`. The scanner reads `sonar.properties`
+and defaults to the shared server at `http://127.0.0.1:9000`; `SONAR_HOST_URL` overrides it.
+Keep the token in the environment, never in project configuration.
 
-`test:coverage` genera `coverage/lcov.info` con Vitest per Vue e TypeScript e
-`coverage/scripts.lcov.info` con il test runner Node per gli script. Sonar importa entrambi e
-analizza `src/` e `scripts/`, escludendo i test. La libreria non ha un backend Rust:
-`test:sonar` passa `--no-rust` allo scanner condiviso. La versione Sonar viene aggiornata insieme
-al pacchetto durante `release:merge`.
+`test:coverage` generates `coverage/lcov.info` with Vitest for Vue and TypeScript, plus
+`coverage/scripts.lcov.info` with Node's test runner for scripts. Sonar imports both and analyzes
+`src/` and `scripts/`, excluding tests. The library has no Rust coverage or Clippy step.
+Consuming apps define their own Rust coverage and Sonar commands in their `package.json`.
 
-Il coverage deve essere almeno dell'80% per ogni file: linee, funzioni e branch; Vitest verifica
-anche gli statement. La soglia è applicata ai singoli componenti, servizi e script, non soltanto
-alla media del progetto. Il report Node esclude esplicitamente `src/tests/` per includere anche
-i checker il cui nome contiene `test`. `coverage/scripts-summary.json` riporta le percentuali
-per script; un file privo di report fa fallire la verifica. I test degli strumenti usano processi
-simulati e cartelle temporanee; la prova della libreria compila e impacchetta una copia isolata
-dei sorgenti, senza richiedere una build precedente.
+Coverage must reach 80% for each file: lines, functions and branches; Vitest also checks statements.
+Node coverage explicitly includes `scripts/**`, including checker filenames containing `test`,
+and excludes `src/tests/**`. `coverage/scripts-summary.json` records script percentages; missing
+reports fail the coverage check. Script tests use simulated processes and temporary folders.
+The package test builds an isolated copy of the source instead of requiring a previous build.
 
-`podman:sonar:up` avvia il container `sonarqube` esistente, mantenendo il suo database; solo
-quando manca lo crea con Compose. `podman:sonar:logs` segue i log; `podman:sonar:down` ferma
-il server condiviso e conserva il container e i dati per il prossimo avvio.
+`podman:sonar:up` starts the existing `sonarqube` container, preserving its database, or creates
+it with Compose when absent. `podman:sonar:logs` follows server logs; `podman:sonar:down` stops
+the container without deleting its data. Release scripts do not read, validate or update
+`sonar.properties`; project analysis configuration is managed separately.
 
-## Estensioni successive
+## Integration scope
 
-L'integrazione su un NAS reale è da provare con le app installate. Chiusura remota e messaggi
-generici tra app richiedono supporto nel launcher. Un componente entra nella libreria quando è
-comune ad almeno due app e non porta con sé dati o regole di un dominio; ogni classe o elemento
-nuovo dei template va aggiunto a `nasPurgeSafelist` (lo verifica un test).
+A new shared component must be used by at least two apps and contain no app-specific domain
+rules. Launcher integration must be checked with apps installed on a real NAS. Remote window
+closing and a generic inter-app message bus require launcher support.

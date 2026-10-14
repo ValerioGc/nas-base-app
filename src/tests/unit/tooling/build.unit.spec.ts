@@ -75,15 +75,17 @@ describe('shared frontend build tools', () => {
       const template =
         readFileSync(join(COMPONENTS, file), 'utf8').split('<template>')[1]?.split('<style')[0] ??
         '';
-      for (const [, tag] of template.matchAll(/<([a-z][a-z0-9]*)[\s>/]/g)) {
+      
+        for (const [, tag] of template.matchAll(/<([a-z][a-z0-9]*)[\s>/]/g)) {
         if (!['template', 'slot'].includes(tag!)) {
           used.add(tag!);
         }
       }
+
       for (const [, value] of template.matchAll(/\sclass="([^"]+)"/g)) {
         value!.split(/\s+/).forEach((name) => used.add(name));
       }
-      // The keys of the bound class objects: `{ active: ... }`, `{ 'app_button--primary': ... }`.
+
       for (const [, value] of template.matchAll(/:class="\{([^}]+)\}"/g)) {
         for (const [, name] of value!.matchAll(/'?([\w-]+)'?\s*:/g)) {
           used.add(name!);

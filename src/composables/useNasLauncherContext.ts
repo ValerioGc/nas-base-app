@@ -3,13 +3,18 @@ import { createNasShell } from '../services/nasShell';
 import { applyNasColor, applyNasPalette, paletteTokens } from '../services/palette';
 import type { AppContext, NasContextOptions, NasLocale, NasTheme } from '../types/launcher';
 
-/** Call once in the application's root. Locale/catalogues remain owned by the host. */
+/**
+ * Composable function to create and manage the launcher context for a NAS application.
+ * @param options NasContextOptions used to configure the launcher context.
+ * @returns An object containing the launcher context, including shell, locale, theme, context, and active state.
+ */
 export function useNasLauncherContext(options: NasContextOptions = {}) {
   const shell = options.shell ?? createNasShell();
   const locale = ref<NasLocale>(options.locale ?? 'it');
   const theme = ref<NasTheme>(options.theme ?? 'light');
   const context = shallowRef<AppContext | null>(null);
   const active = ref(false);
+
   let stop: (() => void) | undefined;
   let root: HTMLElement | null;
   let restore: (() => void) | undefined;
@@ -37,6 +42,7 @@ export function useNasLauncherContext(options: NasContextOptions = {}) {
             element.style.getPropertyPriority(key),
           ] as const,
       );
+
       restore = () => {
         for (const [key, value] of savedAttributes) {
           if (value === null) {
@@ -53,18 +59,22 @@ export function useNasLauncherContext(options: NasContextOptions = {}) {
           }
         }
       };
+
       const url = new URL(element.ownerDocument.location.href);
       changeLocale(url.searchParams.get('lang'));
       const initialTheme = url.searchParams.get('theme');
       if (initialTheme === 'dark' || initialTheme === 'light') {
         theme.value = initialTheme;
       }
+      
       element.dataset.theme = theme.value;
     }
+
     stop = shell.listen((message) => {
       if (message.type !== 'context') {
         return;
       }
+
       context.value = message.context;
       active.value = true;
       theme.value = message.context.theme;
@@ -73,11 +83,13 @@ export function useNasLauncherContext(options: NasContextOptions = {}) {
         root.dataset.nasShell = 'true';
         root.dataset.theme = theme.value;
       }
+
       if (root) {
         applyNasColor(root, '--accent', message.context.accent);
         applyNasPalette(message.context.palette, root);
       }
     });
+
     shell.ready();
   });
 
@@ -86,6 +98,7 @@ export function useNasLauncherContext(options: NasContextOptions = {}) {
     if (!options.shell) {
       shell.dispose();
     }
+    
     restore?.();
     active.value = false;
     context.value = null;

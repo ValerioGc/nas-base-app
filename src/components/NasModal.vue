@@ -6,8 +6,10 @@ interface Props {
   label: string;
   dismissible?: boolean;
 }
+
 const props = withDefaults(defineProps<Props>(), { dismissible: true });
 const emit = defineEmits<{ close: [] }>();
+
 function requestClose() {
   if (props.dismissible) {
     emit('close');
@@ -24,6 +26,7 @@ function requestClose() {
     @click.self="requestClose"
     @cancel.prevent="requestClose"
   >
-    <slot />
+    <!-- Default slot for modal content -->
+    <slot></slot>
   </dialog>
 </template>

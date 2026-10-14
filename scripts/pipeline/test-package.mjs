@@ -131,7 +131,7 @@ if (typeof tools.packageNas !== 'function' || typeof plugins.stripTestIds !== 'f
     ],
     { cwd: fixture, stdio: 'inherit' },
   );
-  // The command an application runs from its scripts answers from the extracted package.
+
   const cli = spawnSync(
     process.execPath,
     [join(packageDirectory, packedManifest.bin['nas-base-app']), 'unknown'],

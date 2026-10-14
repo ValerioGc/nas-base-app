@@ -42,6 +42,8 @@ function typed(event: Event) {
       :data-testid="testid"
       @change="typed"
     />
+    
+    <!-- Stepper buttons -->
     <span class="number_steps">
       <button
         type="button"
