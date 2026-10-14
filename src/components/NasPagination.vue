@@ -43,11 +43,11 @@ const pages = computed<(number | 'before' | 'after')[]>(() => {
   for (let value = start; value <= end; value += 1) {
     items.push(value);
   }
-  
+
   if (end < total.value - 1) {
     items.push(end === total.value - 2 ? total.value - 1 : 'after');
   }
-  
+
   items.push(total.value);
   return items;
 });

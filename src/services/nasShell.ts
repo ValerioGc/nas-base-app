@@ -109,15 +109,13 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
     let eventMessage: ShellEvent;
     if (message.type === 'context' && isContext(message.context)) {
       eventMessage = { nas: 1, type: 'context', context: message.context };
-    } 
-    else if (
+    } else if (
       message.type === 'described' &&
       Array.isArray(message.notifications) &&
       message.notifications.every(isNotification)
     ) {
       eventMessage = { nas: 1, type: 'described', notifications: message.notifications };
-    } 
-    else {
+    } else {
       return;
     }
 
@@ -247,13 +245,14 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
       if (location !== undefined && (!location.startsWith('?') || location.length > 2048)) {
         throw new TypeError('location must be a query string of at most 2048 characters');
       }
-      
+
       return post({ type: 'open', app, ...(location === undefined ? {} : { location }) });
     },
     openHttps: () => post({ type: 'open-https' }),
     notify: (title, message = '', tone = 'info') => post({ type: 'notify', title, message, tone }),
     describeNotifications: (notifications) => post({ type: 'describe', notifications }),
-    sendPickedFiles: (token, files, cancelled = false) => post({ type: 'files-picked', token, files, cancelled }),
+    sendPickedFiles: (token, files, cancelled = false) =>
+      post({ type: 'files-picked', token, files, cancelled }),
     request(type, payload = {}, options = {}) {
       if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(type)) {
         throw new TypeError('Request type must be a protocol command name');
@@ -310,7 +309,7 @@ export function createNasShell(options: NasShellOptions = {}): NasShell {
         clearTimeout(request.timer);
         request.reject(new NasShellError('disposed', 'Bridge disposed'));
       }
-      
+
       pending.clear();
       listeners.clear();
       detachIfIdle();

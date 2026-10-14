@@ -25,12 +25,11 @@ const category = computed(() => props.categories.find((item) => item.value === m
 </script>
 
 <template>
-  <div class="app_surface" :class="{ 'app_contained': contained }">
+  <div class="app_surface" :class="{ app_contained: contained }">
     <aside v-bind="sidebarAttrs" class="app_sidebar" :aria-label="navigationLabel">
-      
       <!-- Sidebar header slot -->
       <slot name="sidebar-header" :category="category"></slot>
-      
+
       <!-- Sidebar navigation -->
       <nav class="category_navigation" :aria-label="navigationLabel">
         <button

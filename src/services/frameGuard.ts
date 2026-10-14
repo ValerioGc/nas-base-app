@@ -44,6 +44,6 @@ export function guardFrame(view: View = window): boolean {
     },
     true,
   );
-  
+
   return true;
 }

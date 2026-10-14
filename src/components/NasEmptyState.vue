@@ -14,7 +14,6 @@ defineProps<Props>();
 
 <template>
   <section class="nas_empty_state">
-    
     <!-- Icon slot -->
     <slot name="icon">
       <NasIcon v-if="svg" :svg="svg" class="nas_empty_icon" />

@@ -75,8 +75,8 @@ describe('shared frontend build tools', () => {
       const template =
         readFileSync(join(COMPONENTS, file), 'utf8').split('<template>')[1]?.split('<style')[0] ??
         '';
-      
-        for (const [, tag] of template.matchAll(/<([a-z][a-z0-9]*)[\s>/]/g)) {
+
+      for (const [, tag] of template.matchAll(/<([a-z][a-z0-9]*)[\s>/]/g)) {
         if (!['template', 'slot'].includes(tag!)) {
           used.add(tag!);
         }

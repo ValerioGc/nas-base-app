@@ -11,7 +11,7 @@ export function toolFixture(t) {
   const bin = join(root, 'bin');
   mkdirSync(bin);
   const env = { ...process.env, NAS_TEST_ROOT: root, NAS_TEST_CALLS: join(root, 'calls.jsonl') };
-  
+
   function install(name, body = '') {
     const executable = join(bin, name);
     writeFileSync(

@@ -31,7 +31,7 @@ const id = useId();
       :disabled="props.disabled"
       :data-testid="props.testid"
     />
-    
+
     <!-- Switch track and label -->
     <span class="app_switch_track" aria-hidden="true"></span>
     <span class="app_switch_label">{{ props.label }}</span>

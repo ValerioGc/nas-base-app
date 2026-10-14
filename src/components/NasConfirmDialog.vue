@@ -68,7 +68,7 @@ function confirm() {
         {{ confirmLabel }}
       </button>
     </footer>
-    
+
     <!-- Default slot for additional content -->
     <slot></slot>
   </dialog>

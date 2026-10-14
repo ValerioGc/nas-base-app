@@ -30,7 +30,7 @@ import { parseArgs } from 'node:util';
 import { gunzipSync } from 'node:zlib';
 
 function check(condition, message) {
-  if (!condition){
+  if (!condition) {
     throw new Error(message);
   }
 }
@@ -51,10 +51,10 @@ function packagePath(value) {
 function packagedFile(root, name) {
   const file = join(root, packagePath(name));
   check(existsSync(file) && statSync(file).isFile(), `Missing packaged file: ${name}`);
-  
+
   const location = relative(root, realpathSync(file));
   check(location !== '..' && !location.startsWith(`..${sep}`), `Path escapes package: ${name}`);
-  
+
   return file;
 }
 
@@ -82,7 +82,7 @@ function paxFields(body) {
 
     const lengthText = body.subarray(offset, space).toString('ascii');
     check(/^\d+$/.test(lengthText), 'Invalid PAX length');
-    
+
     const length = Number(lengthText);
     check(
       Number.isSafeInteger(length) &&
@@ -95,10 +95,10 @@ function paxFields(body) {
     const record = body.subarray(space + 1, offset + length - 1).toString('utf8');
     const equals = record.indexOf('=');
     check(equals > 0, 'Invalid PAX field');
-    
+
     const key = record.slice(0, equals);
     check(!key.startsWith('GNU.sparse'), 'Sparse tar entries are not supported');
-    
+
     fields[key] = record.slice(equals + 1);
     offset += length;
   }
@@ -150,7 +150,7 @@ function tarExtension(type, body) {
 function tarEntryName(header, fields) {
   const prefix =
     header.subarray(257, 263).toString() === 'ustar\0' ? tarString(header.subarray(345, 500)) : '';
-  
+
   return packagePath(
     fields.path ?? [prefix, tarString(header.subarray(0, 100))].filter(Boolean).join('/'),
   );
@@ -179,10 +179,9 @@ function tarEntries(data) {
 
     const extension = tarExtension(type, body);
     if (extension) {
-      if (extension.global){
+      if (extension.global) {
         globalFields = { ...globalFields, ...extension.fields };
-      }
-      else {
+      } else {
         nextFields = { ...nextFields, ...extension.fields };
       }
 
@@ -195,7 +194,7 @@ function tarEntries(data) {
     check(!(mode & 0o6000), `Privileged file mode: ${name}`);
     check(!entries.has(name), `Duplicate archive path: ${name}`);
     check(name !== '.' || type === '5', 'Archive root must be a directory');
-    
+
     entries.set(name, {
       name,
       type,
@@ -212,7 +211,7 @@ function tarEntries(data) {
 
 /**
  * Checks that all parent directories of archive entries are themselves directories.
- * @param {Map<string, { name: string, type: string, mode: number, body: Uint8Array, target?: string }>} entries 
+ * @param {Map<string, { name: string, type: string, mode: number, body: Uint8Array, target?: string }>} entries
  */
 function checkArchiveParents(entries) {
   for (const { name } of entries.values()) {
@@ -231,8 +230,8 @@ function resolveLink(entries, name, depth = 0) {
   const pending = name.split('/');
   while (pending.length) {
     const part = pending.shift();
-    if (!part || part === '.'){ 
-      continue; 
+    if (!part || part === '.') {
+      continue;
     }
 
     if (part === '..') {
@@ -240,7 +239,7 @@ function resolveLink(entries, name, depth = 0) {
       resolved.pop();
       continue;
     }
-    
+
     resolved.push(part);
     const entry = entries.get(resolved.join('/'));
     if (['1', '2'].includes(entry?.type)) {
@@ -266,7 +265,7 @@ function archiveLinks(entries) {
       if (entry.type === '1') {
         check(entries.get(target)?.type === '0', `Invalid hardlink target: ${entry.name}`);
       }
-      
+
       links.set(entry.name, target);
     }
   }
@@ -279,10 +278,10 @@ function extract(entries, root) {
   const links = archiveLinks(entries);
   for (const entry of entries.values()) {
     const destination = join(root, entry.name);
-    if (entry.type === '5'){ 
+    if (entry.type === '5') {
       mkdirSync(destination, { recursive: true });
     }
-    
+
     if (entry.type === '0') {
       mkdirSync(dirname(destination), { recursive: true });
       writeFileSync(destination, entry.body, { flag: 'wx', mode: (entry.mode & 0o755) | 0o600 });
@@ -291,14 +290,14 @@ function extract(entries, root) {
   }
 
   for (const entry of entries.values()) {
-    if (!links.has(entry.name)){
+    if (!links.has(entry.name)) {
       continue;
     }
 
     const destination = join(root, entry.name);
     mkdirSync(dirname(destination), { recursive: true });
 
-    if (entry.type === '1'){
+    if (entry.type === '1') {
       linkSync(join(root, links.get(entry.name)), destination);
     } else {
       symlinkSync(entry.target, destination);
@@ -319,10 +318,10 @@ function validateIdentity(root, manifest, args) {
     'Invalid app.version',
   );
 
-  if (args['expected-id']){
-     check(id === args['expected-id'], 'app.id does not match --expected-id');
+  if (args['expected-id']) {
+    check(id === args['expected-id'], 'app.id does not match --expected-id');
   }
-  if (args['expected-version']){
+  if (args['expected-version']) {
     check(
       version === args['expected-version'].replace(/^v/, ''),
       'app.version does not match --expected-version',
@@ -337,7 +336,7 @@ function validateIdentity(root, manifest, args) {
     'Archive name must carry the manifest version',
   );
 
-  if (args['asset-template']){
+  if (args['asset-template']) {
     check(
       basename(args.archive) === args['asset-template'].replaceAll('{version}', version),
       'Archive name does not match --asset-template',
@@ -355,7 +354,7 @@ function validateIdentity(root, manifest, args) {
     manifest.run.socket === undefined || manifest.run.socket === `/run/nas-os/apps/${id}.sock`,
     'run.socket must be /run/nas-os/apps/<id>.sock, or absent',
   );
-  
+
   check(
     manifest.ui?.protocol === undefined || manifest.ui.protocol === 1,
     'Expected ui.protocol 1',
@@ -420,11 +419,11 @@ function validateManifest(root, args) {
   const manifest = JSON.parse(readFileSync(packagedFile(root, 'nas-app.json'), 'utf8'));
   check(object(manifest), 'Manifest must be a JSON object');
 
-  for (const field of ['app', 'run']){
+  for (const field of ['app', 'run']) {
     check(object(manifest[field]), `${field} must be an object`);
   }
 
-  for (const field of ['ui', 'permissions']){
+  for (const field of ['ui', 'permissions']) {
     check(manifest[field] === undefined || object(manifest[field]), `${field} must be an object`);
   }
 
@@ -439,7 +438,7 @@ function validateManifest(root, args) {
   for (const capability of manifest.provides ?? []) {
     validateCapability(capability);
   }
-  
+
   return { manifest, executable };
 }
 
@@ -470,7 +469,7 @@ function unpack(args, root) {
 
 function processGroup(pid) {
   return readdirSync('/proc').filter((entry) => {
-    if (!/^\d+$/.test(entry)){
+    if (!/^\d+$/.test(entry)) {
       return false;
     }
 
@@ -493,9 +492,9 @@ function processInodes(member) {
   try {
     descriptors = readdirSync(`/proc/${member}/fd`);
   } catch (error) {
-    if (error.code === 'ENOENT' || error.code === 'EACCES'){
+    if (error.code === 'ENOENT' || error.code === 'EACCES') {
       return inodes;
-    } 
+    }
 
     throw error;
   }
@@ -503,12 +502,12 @@ function processInodes(member) {
   for (const descriptor of descriptors) {
     try {
       const match = /^socket:\[(\d+)\]$/.exec(readlinkSync(`/proc/${member}/fd/${descriptor}`));
-      if (match){
+      if (match) {
         inodes.add(match[1]);
       }
     } catch (error) {
-      if (error.code !== 'ENOENT'){ 
-        throw error; 
+      if (error.code !== 'ENOENT') {
+        throw error;
       }
     }
   }
@@ -517,10 +516,7 @@ function processInodes(member) {
 
 function checkTcpListeners(pid, inodes) {
   for (const table of ['tcp', 'tcp6']) {
-    let lines = readFileSync(`/proc/${pid}/net/${table}`, 'utf8')
-      .trim()
-      .split('\n')
-      .slice(1);
+    let lines = readFileSync(`/proc/${pid}/net/${table}`, 'utf8').trim().split('\n').slice(1);
 
     for (const line of lines) {
       const fields = line.trim().split(/\s+/);
@@ -556,9 +552,10 @@ function checkListener(pid, socket) {
 function decodeAttribute(value) {
   return value.replace(/&(?:#(x[\da-f]+|\d+)|amp|quot|apos|lt|gt);/gi, (all, code) => {
     if (code) {
-      const number = code[0].toLowerCase() === 'x' ? Number.parseInt(code.slice(1), 16) : Number(code);
-      
-        return String.fromCodePoint(number);
+      const number =
+        code[0].toLowerCase() === 'x' ? Number.parseInt(code.slice(1), 16) : Number(code);
+
+      return String.fromCodePoint(number);
     }
 
     return { '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>' }[
@@ -594,19 +591,19 @@ function attributeValue(text, start) {
   }
 
   let end = start;
-  while (end < text.length && !/[\s>]/.test(text[end])){
+  while (end < text.length && !/[\s>]/.test(text[end])) {
     end++;
   }
 
-  return { 
-    value: text.slice(start, end), 
-    next: end 
+  return {
+    value: text.slice(start, end),
+    next: end,
   };
 }
 
 function skipWhitespace(text, start) {
   let index = start;
-  while (index < text.length && /\s/.test(text[index])){
+  while (index < text.length && /\s/.test(text[index])) {
     index++;
   }
 
@@ -623,22 +620,22 @@ function htmlAttributes(text) {
     }
 
     const start = index;
-    while (index < text.length && !/[\s=]/.test(text[index])){
+    while (index < text.length && !/[\s=]/.test(text[index])) {
       index++;
     }
 
     const name = text.slice(start, index).toLowerCase();
     index = skipWhitespace(text, index);
-    if (text[index] !== '='){
+    if (text[index] !== '=') {
       continue;
     }
 
     index++;
     index = skipWhitespace(text, index);
-    
+
     const { value, next } = attributeValue(text, index);
     index = next;
-    if (name){
+    if (name) {
       attributes[name] = decodeAttribute(value);
     }
   }
@@ -648,7 +645,7 @@ function htmlAttributes(text) {
 
 function readHtmlTag(html, start) {
   let nameEnd = start + 1;
-  while (nameEnd < html.length && /[\w:-]/.test(html[nameEnd])){
+  while (nameEnd < html.length && /[\w:-]/.test(html[nameEnd])) {
     nameEnd++;
   }
 
@@ -669,22 +666,22 @@ function* htmlTags(html) {
   let index = 0;
   while (index < html.length) {
     const start = html.indexOf('<', index);
-    if (start < 0){
+    if (start < 0) {
       return;
     }
-    
+
     if (html.startsWith('<!--', start)) {
       const end = html.indexOf('-->', start + 4);
       index = end < 0 ? html.length : end + 3;
       continue;
     }
-    
+
     const { name, nameEnd, end } = readHtmlTag(html, start);
     index = end + 1;
     if (['script', 'img', 'source', 'link'].includes(name)) {
       yield { name, attributes: htmlAttributes(html.slice(nameEnd, end)) };
     }
-    
+
     if (name === 'script') {
       index = afterScript(html, index);
     }
@@ -694,7 +691,7 @@ function* htmlTags(html) {
 function htmlAssets(html) {
   const urls = new Set();
   for (const { name, attributes } of htmlTags(html)) {
-    if (name !== 'link' && attributes.src){
+    if (name !== 'link' && attributes.src) {
       urls.add(attributes.src);
     }
 
@@ -739,7 +736,7 @@ async function checkAssets(uiPath, html, get) {
   let checkedAssets = 0;
   for (const asset of htmlAssets(html)) {
     const url = new URL(asset, new URL(uiPath, origin));
-    if (url.origin !== origin){ 
+    if (url.origin !== origin) {
       continue;
     }
 
@@ -839,7 +836,7 @@ async function smokeTest(args, manifest, executable) {
       }
     }
     check(!stopped, 'Application stopped during smoke test');
-    
+
     child.kill('SIGTERM');
     const result = await Promise.race([exit, delay(5000, null, { ref: false })]);
     check(result, 'Application did not stop within 5 seconds of SIGTERM');
@@ -847,7 +844,7 @@ async function smokeTest(args, manifest, executable) {
       result.code === 0 || result.signal === 'SIGTERM',
       `Unexpected shutdown exit: ${result.code ?? result.signal}`,
     );
-    
+
     console.log(
       `PASS runtime: unix socket, UI, ${checkedAssets} local assets, ${args['api-path'].length} API endpoint(s), no TCP listener, SIGTERM shutdown`,
     );
@@ -858,7 +855,7 @@ async function smokeTest(args, manifest, executable) {
     process.removeListener('SIGINT', cancel);
     process.removeListener('SIGTERM', cancel);
     try {
-      if (child.pid){
+      if (child.pid) {
         process.kill(-child.pid, 'SIGKILL');
       }
     } catch (error) {
@@ -924,10 +921,10 @@ export async function testNasPackage(argv = [], projectRoot = process.cwd()) {
       const { id, version } = JSON.parse(
         readFileSync(join(projectRoot, 'nas-app.json'), 'utf8'),
       ).app;
-  
+
       return join('release-assets', `${id}-${version}-linux-${process.arch}.tar.gz`);
     })();
-  
+
   const args = {
     ...values,
     archive: resolve(projectRoot, archive),
@@ -941,7 +938,7 @@ export async function testNasPackage(argv = [], projectRoot = process.cwd()) {
     Number.isSafeInteger(args['max-unpacked-mib']) && args['max-unpacked-mib'] > 0,
     'Invalid size limit',
   );
-  
+
   const root = mkdtempSync(join(tmpdir(), 'nas-install-'));
   try {
     const { manifest, executable } = unpack(args, root);

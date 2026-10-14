@@ -24,7 +24,7 @@ export function applyNasPalette(palette: unknown, root?: HTMLElement): void {
   if (!element) {
     return;
   }
-  
+
   const colors = isRecord(palette) ? palette : {};
   for (const [role, token] of Object.entries(paletteTokens)) {
     applyNasColor(element, token, colors[role]);

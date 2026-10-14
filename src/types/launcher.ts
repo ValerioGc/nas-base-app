@@ -1,7 +1,8 @@
 export type NasTheme = 'light' | 'dark';
 export type NasLocale = 'it' | 'en';
 export type NotificationTone = 'info' | 'success' | 'warning' | 'error';
-export type PaletteRole = 'background' | 'foreground' | 'surface' | 'sunken' | 'hover' | 'border' | 'muted';
+export type PaletteRole =
+  'background' | 'foreground' | 'surface' | 'sunken' | 'hover' | 'border' | 'muted';
 
 export interface AppContext {
   app: string;

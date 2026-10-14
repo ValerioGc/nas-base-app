@@ -198,7 +198,7 @@ test('the packed library works in an isolated Vue, TypeScript, Sass and Node con
     const output = join(f.root, 'dist/styles', relative('src/styles', source));
     assert.deepEqual(readFileSync(output), readFileSync(join(project, source)));
   }
-  
+
   assert.equal(existsSync(join(f.root, 'dist/styles/style.ts')), false);
   const packed = JSON.parse(
     execFileSync(npm, ['pack', '--ignore-scripts', '--pack-destination', output, '--json'], {

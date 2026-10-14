@@ -24,7 +24,7 @@ export function shellFixture(
   function receive(data: unknown, origin = shellOrigin, source = parent) {
     target.dispatchEvent(new MessageEvent('message', { data, origin, source }));
   }
-  
+
   function lastRequest() {
     const message = post.mock.calls.at(-1)?.[0];
     if (!isRecord(message) || typeof message.requestId !== 'string') {
@@ -32,7 +32,7 @@ export function shellFixture(
     }
     return message.requestId;
   }
-  
+
   return { shell, post, receive, lastRequest, add, remove, parent };
 }
 

@@ -9,7 +9,7 @@ function extractChangelog(version, root = process.cwd()) {
   if (start === -1) {
     throw new Error(`No changelog entry found for ${version}.`);
   }
-  
+
   const remaining = changelog.slice(start + heading.length);
   const next = remaining.search(/^## \[/m);
   return (
@@ -25,7 +25,7 @@ const sections = [
 
 // Adds a changelog entry for the specified version if it doesn't already exist.
 function addChangelogEntry(changelog, version, subjects) {
-  if (changelog.includes(`## [${version}]`)){
+  if (changelog.includes(`## [${version}]`)) {
     return changelog;
   }
 
@@ -63,9 +63,9 @@ function addChangelogEntry(changelog, version, subjects) {
 
 if (process.argv[1] && require('node:path').resolve(process.argv[1]) === __filename) {
   try {
-    if (!process.argv[2]){
+    if (!process.argv[2]) {
       throw new Error('Usage: node extract-changelog.cjs <version>');
-    } 
+    }
 
     process.stdout.write(`${extractChangelog(process.argv[2])}\n`);
   } catch (error) {

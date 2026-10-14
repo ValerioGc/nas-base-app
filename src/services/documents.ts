@@ -122,7 +122,7 @@ export function storedDocument<T>(
       if (saved === null || text === saved) {
         return;
       }
-      
+
       saved = text;
       pending = text;
       channel?.postMessage(text);

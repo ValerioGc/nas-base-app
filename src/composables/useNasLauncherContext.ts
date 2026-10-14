@@ -66,7 +66,7 @@ export function useNasLauncherContext(options: NasContextOptions = {}) {
       if (initialTheme === 'dark' || initialTheme === 'light') {
         theme.value = initialTheme;
       }
-      
+
       element.dataset.theme = theme.value;
     }
 
@@ -98,7 +98,7 @@ export function useNasLauncherContext(options: NasContextOptions = {}) {
     if (!options.shell) {
       shell.dispose();
     }
-    
+
     restore?.();
     active.value = false;
     context.value = null;

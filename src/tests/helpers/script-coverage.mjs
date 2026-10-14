@@ -66,6 +66,6 @@ for (const source of globSync('scripts/**/*.{mjs,cjs}')) {
   }
 }
 
-if (failed){
+if (failed) {
   process.exitCode = 1;
 }
