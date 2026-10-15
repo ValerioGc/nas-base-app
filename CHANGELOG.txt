@@ -2,6 +2,12 @@
 
 All notable changes to @valeriogc/nas-base-app are documented in this file.
 
+## [0.1.6]
+
+### Fixed
+
+- Keep modal height stable across tabs and hide scrollbars.
+
 ## [0.1.5]
 
 ### Changed

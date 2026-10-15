@@ -179,6 +179,9 @@ handle a local close request or prepare a future integration; it does not close 
 - `NasPageHeader`: `title`, optional `overview` and `subtitle`, and an `actions` slot.
 - `NasModal`: a native dialog with `label`, optional `dismissible` and a content slot. It emits
   `close` for Escape or backdrop clicks. Use `v-if`; the app decides when to unmount it.
+  Its content panel keeps a stable 640px height, capped by the viewport. Headers and footers
+  stay visible while `.modal_body`, `.settings_body` or `.log_lines` scroll without visible
+  scrollbars. Override `--nas-modal-height` when a different fixed height is needed.
 - `NasNumberStepper`: integer `v-model`, `id`, `min`, `max`, optional `label`,
   `increaseLabel`, `decreaseLabel`, `disabled` and optional `testid`. Rejects empty,
   fractional or out-of-range input.
