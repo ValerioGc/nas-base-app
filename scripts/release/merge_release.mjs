@@ -6,14 +6,14 @@ import { prepareRelease } from '../pipeline/prepare_release.mjs';
 import { optionValue, readJson, runCli, runGit, runNpm } from '../utils.mjs';
 
 /**
- * Aggiorna la versione, esegue le verifiche, poi effettua commit, merge e push del tag.
- * @param {Object} options Opzioni del rilascio.
- * @param {string} [options.type='patch'] Incremento patch, minor o major.
- * @param {string} [options.branch='main'] Branch di destinazione.
- * @param {boolean} [options.dryRun=false] Calcola la versione senza modificare il repository.
- * @param {Function} [options.bump=bumpVersion] Callback per aggiornare i file di versione.
- * @param {Function} [options.prepare=prepareRelease] Callback per eseguire le verifiche.
- * @returns {string} Versione da rilasciare.
+ * Bumps the version, runs the checks, then commits, merges and pushes the tag.
+ * @param {Object} options Release options.
+ * @param {string} [options.type='patch'] Patch, minor or major bump.
+ * @param {string} [options.branch='main'] Target branch.
+ * @param {boolean} [options.dryRun=false] Computes the version without changing the repository.
+ * @param {Function} [options.bump=bumpVersion] Callback that updates the version files.
+ * @param {Function} [options.prepare=prepareRelease] Callback that runs the checks.
+ * @returns {string} Version to release.
  */
 export function mergeRelease({
   type = 'patch',

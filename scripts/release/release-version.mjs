@@ -4,11 +4,11 @@ export const releasePattern =
   /^v?(?!0\d)\d+\.(?!0\d)\d+\.(?!0\d)\d+(?:-[\dA-Za-z-]+(?:\.[\dA-Za-z-]+)*)?$/;
 
 /**
- * Mantiene la versione al primo rilascio o se già avanzata; altrimenti incrementa l'ultima rilasciata.
- * @param {string} current Versione del progetto.
- * @param {string | null} latest Ultimo tag raggiungibile, oppure null al primo rilascio.
- * @param {string} [bump='patch'] Tipo di incremento: patch, minor o major.
- * @returns {string} Versione da rilasciare.
+ * Keeps the version on the first release or when already ahead, otherwise bumps the last released one.
+ * @param {string} current Project version.
+ * @param {string | null} latest Latest reachable tag, or null on the first release.
+ * @param {string} [bump='patch'] Bump type: patch, minor or major.
+ * @returns {string} Version to release.
  */
 export function nextVersion(current, latest, bump = 'patch') {
   if (!['patch', 'minor', 'major'].includes(bump)) {
@@ -42,9 +42,9 @@ export function nextVersion(current, latest, bump = 'patch') {
 }
 
 /**
- * Cerca il tag ammesso più vicino a HEAD tra quelli raggiungibili nei suoi antenati.
- * @param {string} cwd Directory del repository.
- * @returns {string|null} Tag trovato, oppure null al primo rilascio.
+ * Finds the accepted tag closest to HEAD among its ancestors.
+ * @param {string} cwd Repository directory.
+ * @returns {string|null} The tag found, or null on the first release.
  */
 export function latestTag(cwd = process.cwd()) {
   const git = (...args) => runGit(args, { cwd });

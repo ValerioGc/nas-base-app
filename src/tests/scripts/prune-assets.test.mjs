@@ -76,7 +76,7 @@ test('keeps the release just packaged and the one before it, and nothing else ve
     'nas-app-0.1.10-linux-x64.tar.gz',
     'nas-app-0.1.10-linux-x64.tar.gz.sha256',
     'nas-app-0.1.9-fix-linux-x64.tar.gz',
-    // Archivi di un vecchio nome e un documento versionato estraneo al prefisso del pacchetto.
+    // Archives under an old name and a versioned document outside the package prefix.
     'app-0.1.9-linux-x64.tar.gz',
     'nas_os_installation_manual_0.1.9.pdf',
     'notes.txt',

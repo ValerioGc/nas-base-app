@@ -81,9 +81,9 @@ export function compareVersions(left, right) {
 }
 
 /**
- * Conserva la versione corrente e la precedente più recente con un prefisso ammesso.
- * Elimina gli altri file versionati, anche con nomi diversi; lascia cartelle e file senza versione.
- * Restituisce i nomi eliminati.
+ * Keeps the current version and the latest previous one with an accepted prefix.
+ * Deletes the other versioned files, under other names too; leaves folders and unversioned files.
+ * Returns the deleted names.
  */
 export function pruneAssets(directory, version, prefixes) {
   const files = readdirSync(directory, { withFileTypes: true })

@@ -7,9 +7,9 @@ import { pruneAssets } from '../pipeline/prune-assets.mjs';
 import { optionValue, readJson, runCli, runNpm, writeChecksum, writeJson } from '../utils.mjs';
 
 /**
- * Crea archivio e SHA256, conservando solo la versione corrente e la precedente.
- * @param {string} root Directory della libreria.
- * @returns {string} Percorso dell'archivio creato.
+ * Creates the archive and its SHA256, keeping only the current and the previous version.
+ * @param {string} root Library directory.
+ * @returns {string} Path of the created archive.
  */
 export function packLibrary(root = process.cwd()) {
   const manifest = readJson(resolve(root, 'package.json'));
@@ -33,12 +33,12 @@ export function packLibrary(root = process.cwd()) {
 }
 
 /**
- * Aggiorna versione, lockfile e changelog.
- * @param {string} oldVersion Versione corrente.
- * @param {string} newVersion Nuova versione.
- * @param {string[]} subjects Titoli dei commit da inserire nel changelog.
- * @param {string} root Directory della libreria.
- * @returns {string[]} File aggiornati.
+ * Updates version, lockfile and changelog.
+ * @param {string} oldVersion Current version.
+ * @param {string} newVersion New version.
+ * @param {string[]} subjects Commit subjects for the changelog.
+ * @param {string} root Library directory.
+ * @returns {string[]} Updated files.
  */
 export function bumpLibrary(oldVersion, newVersion, subjects = [], root = process.cwd()) {
   if (!releasePattern.test(newVersion)) {
@@ -66,10 +66,10 @@ export function bumpLibrary(oldVersion, newVersion, subjects = [], root = proces
 }
 
 /**
- * Verifica la coerenza tra tag, versione del pacchetto e voce nel changelog.
- * @param {string} tag Tag da verificare.
- * @param {string} root Directory della libreria.
- * @returns {string} Versione verificata.
+ * Checks that tag, package version and changelog entry agree.
+ * @param {string} tag Tag to check.
+ * @param {string} root Library directory.
+ * @returns {string} Checked version.
  */
 export function verifyLibraryRelease(tag, root = process.cwd()) {
   const { version } = readJson(resolve(root, 'package.json'));
@@ -89,8 +89,8 @@ export function verifyLibraryRelease(tag, root = process.cwd()) {
 }
 
 /**
- * Esegue le verifiche della libreria e controlla il pacchetto da pubblicare.
- * @param {string} root Directory della libreria.
+ * Runs the library checks and inspects the package to publish.
+ * @param {string} root Library directory.
  */
 export function prepareLibraryRelease(root = process.cwd()) {
   for (const name of ['release:check', 'check', 'test:coverage', 'nas:package', 'nas:test']) {

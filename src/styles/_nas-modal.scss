@@ -43,7 +43,7 @@
     }
   }
 
-  // Mantiene lo scorrimento con mouse, touch e tastiera senza mostrare la barra.
+  // Keeps scrolling with mouse, touch and keyboard without showing the bar.
   &,
   & * {
     scrollbar-width: none;
