@@ -19,7 +19,7 @@ const id = useId();
 <template>
   <label
     class="app_switch"
-    :class="{ 'app_switch_disabled': props.disabled }"
+    :class="{ app_switch_disabled: props.disabled }"
     :data-testid="props.testid && `${props.testid}_switch`"
   >
     <input
