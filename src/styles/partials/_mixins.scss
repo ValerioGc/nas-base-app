@@ -1,0 +1,27 @@
+@mixin flex_layout(
+  $align: stretch,
+  $justify: flex-start,
+  $direction: row,
+  $gap: 0,
+  $wrap: nowrap,
+  $display: flex
+) {
+  display: $display;
+  flex-direction: $direction;
+  align-items: $align;
+  justify-content: $justify;
+  gap: $gap;
+  flex-wrap: $wrap;
+}
+
+@mixin flex_center($gap: 0) {
+  @include flex_layout(center, center, row, $gap);
+}
+
+@mixin flex_between($gap: 0) {
+  @include flex_layout(center, space-between, row, $gap);
+}
+
+@mixin flex_column($align: stretch, $gap: 0) {
+  @include flex_layout($align, flex-start, column, $gap);
+}

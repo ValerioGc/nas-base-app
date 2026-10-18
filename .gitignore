@@ -1,0 +1,10 @@
+# Dependencies and generated project output
+node_modules/
+/dist/
+/release-assets/
+/coverage/
+/.scannerwork/
+
+# Local pnpm files; CI uses the committed package-lock.json
+/pnpm-lock.yaml
+/pnpm-workspace.yaml

@@ -1,0 +1,32 @@
+@use './global' as *;
+
+.app_loading {
+  @extend %fx_center;
+  flex-direction: column;
+  gap: $nas_status_gap;
+  min-height: $nas_status_height;
+  padding: $nas_status_padding;
+  color: var(--nas-muted);
+  text-align: center;
+}
+
+.loading_spinner {
+  width: $nas_spinner_size;
+  aspect-ratio: 1;
+  border: $nas_spinner_stroke solid var(--nas-outline);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: loading_spin $nas_spinner_duration linear infinite;
+}
+
+@keyframes loading_spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading_spinner {
+    animation: none;
+  }
+}

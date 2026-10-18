@@ -1,0 +1,14 @@
+# Dependencies, generated output and analysis data
+node_modules/
+/dist/
+/release-assets/
+/coverage/
+/.scannerwork/
+
+# Lockfiles and local pnpm configuration
+/package-lock.json
+/pnpm-lock.yaml
+/pnpm-workspace.yaml
+
+# Vue files are formatted and checked by scripts/dev/format-sfc-spacing.mjs
+**/*.vue

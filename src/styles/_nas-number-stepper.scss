@@ -1,0 +1,63 @@
+.number_stepper {
+  display: inline-flex;
+  min-width: 0;
+  border: 1px solid var(--nas-border);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--nas-sunken);
+
+  input {
+    width: 100%;
+    min-width: 0;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--nas-foreground);
+    appearance: textfield;
+    -moz-appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      margin: 0;
+      appearance: none;
+    }
+  }
+}
+
+.number_steps {
+  display: grid;
+  flex: none;
+  border-left: 1px solid var(--nas-border);
+
+  button {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    padding: 4px;
+    border: 0;
+    color: var(--nas-muted);
+    background: transparent;
+
+    &:hover:not(:disabled) {
+      color: var(--accent);
+      background: var(--nas-hover);
+    }
+  }
+
+  button + button {
+    border-top: 1px solid var(--nas-border);
+  }
+}
+
+.step_arrow {
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+
+  &.up {
+    transform: rotate(225deg);
+  }
+}

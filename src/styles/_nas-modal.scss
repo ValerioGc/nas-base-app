@@ -1,0 +1,57 @@
+@use './global' as *;
+
+.app_modal {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  overflow: hidden;
+  margin: 0;
+  border: 0;
+  padding: $nas_modal_padding;
+  color: inherit;
+  background: transparent;
+
+  &[open] {
+    display: grid;
+    place-items: center;
+  }
+
+  &::backdrop {
+    background: $nas_modal_backdrop;
+  }
+
+  // Altezza stabile tra i tab; intestazione e azioni restano fuori dall'area scorrevole.
+  &[open] > :first-child {
+    display: flex;
+    flex-direction: column;
+    height: min(var(--nas-modal-height, 640px), calc(100dvh - $nas_modal_padding * 2));
+    max-height: calc(100dvh - $nas_modal_padding * 2);
+    min-height: 0;
+    overflow: hidden;
+
+    > * {
+      flex-shrink: 0;
+    }
+
+    > :is(.modal_body, .settings_body, .log_lines) {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+    }
+  }
+
+  // Keeps scrolling with mouse, touch and keyboard without showing the bar.
+  &,
+  & * {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+  }
+}

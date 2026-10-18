@@ -1,0 +1,66 @@
+@use './global' as *;
+
+.app_switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 650;
+  cursor: pointer;
+
+  &_disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+
+    &:checked + .app_switch_track {
+      background: var(--accent);
+
+      &::after {
+        transform: translate(12px, -50%);
+      }
+    }
+
+    &:focus-visible + .app_switch_track {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+  }
+
+  &_track {
+    position: relative;
+    flex-shrink: 0;
+    width: 32px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--surface-border);
+    transition: background 150ms ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 1px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--surface);
+      transform: translateY(-50%);
+      transition: transform 150ms ease;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app_switch_track,
+  .app_switch_track::after {
+    transition: none;
+  }
+}

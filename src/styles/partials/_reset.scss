@@ -1,0 +1,18 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  color: var(--nas-foreground);
+  background: var(--nas-app-background, var(--nas-background));
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}

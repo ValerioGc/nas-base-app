@@ -1,0 +1,9 @@
+# Changelog
+
+All notable changes to @valeriogc/nas-base-app are documented in this file.
+
+## [Unreleased]
+
+## [0.9.0]
+
+- Initial release of @valeriogc/nas-base-app.

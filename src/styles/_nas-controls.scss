@@ -1,0 +1,85 @@
+@use './nas-buttons';
+
+.card_heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--card_heading-border);
+  color: var(--card_heading-color);
+  font-size: 13px;
+
+  h2 {
+    margin: 0;
+    color: var(--heading-color);
+    font-size: 17px;
+  }
+}
+
+.app_field,
+.field {
+  display: grid;
+  gap: 6px;
+  color: var(--nas-muted);
+  font-size: 13px;
+
+  input,
+  select,
+  textarea {
+    padding: 9px 10px;
+    border: 1px solid var(--nas-border);
+    border-radius: 9px;
+    background: var(--nas-sunken);
+    color: var(--nas-foreground);
+  }
+}
+
+.page_header {
+  margin-bottom: 28px;
+
+  h1 {
+    margin: 0;
+    font-size: clamp(28px, 3vw, 38px);
+    letter-spacing: -0.035em;
+  }
+
+  p {
+    margin: 10px 0 0;
+    color: var(--nas-muted);
+  }
+}
+
+.page_panel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 20px 24px;
+
+  h2 {
+    margin: 0;
+    font-size: 17px;
+  }
+}
+
+.muted {
+  color: var(--nas-muted);
+}
+
+.sr_only,
+.visually_hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@each $tone in error, warning, info, success {
+  .tone_text_#{$tone} {
+    color: var(--tone-#{$tone});
+  }
+}
