@@ -8,6 +8,11 @@ export { createNasI18n } from './services/i18n';
 export { storedDocument, type DocumentOptions, type StoredDocument } from './services/documents';
 export { formatBytes, share } from './services/format';
 export {
+  temperatureTone,
+  type TemperatureSource,
+  type TemperatureTone,
+} from './services/temperature';
+export {
   describeSchedule,
   monthName,
   scheduleKind,

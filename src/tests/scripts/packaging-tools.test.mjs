@@ -208,7 +208,8 @@ test('the packed library works in an isolated Vue, TypeScript, Sass and Node con
     }),
   );
 
-  const filename = packed[0].filename;
+  const [entry] = Array.isArray(packed) ? packed : Object.values(packed);
+  const filename = entry.filename;
   const digest = createHash('sha256')
     .update(readFileSync(join(output, filename)))
     .digest('hex');

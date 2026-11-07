@@ -32,6 +32,7 @@ value after out-of-range input. Apps decide when to show, confirm or unmount dia
 | i18n runtime                     | Apps with the same catalog implementation              | `createNasI18n`                                             |
 | Backend documents                | Explorer and Monitor `documents.ts`                    | `storedDocument`                                            |
 | Sizes and percentages            | Cleanup and Sync `format.ts`                           | `formatBytes`, `share`                                      |
+| Temperature limits               | Monitor sensors and Disks S.M.A.R.T.                   | `temperatureTone`                                           |
 | Schedule descriptions            | Backup and Cleanup schedule helpers                    | `describeSchedule`, `scheduleKind`, weekday and month names |
 | Power-off intervals              | Backup and Security power helpers                      | `offRanges`, `offAt`, `minuteOf`, `powerWeekdays`           |
 | Themes and styling               | App SCSS themes, reset, layout, controls and scrollbar | Individually importable SCSS partials                       |
