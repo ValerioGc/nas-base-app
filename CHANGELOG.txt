@@ -2,7 +2,7 @@
 
 All notable changes to @valeriogc/nas-base-app are documented in this file.
 
-## [Unreleased]
+## [0.9.1]
 
 - `temperatureTone` judges a temperature by the kind of component, with lower limits for disks
   than for processors and graphics cards.
