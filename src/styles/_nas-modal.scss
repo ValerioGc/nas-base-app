@@ -23,7 +23,7 @@
     background: $nas_modal_backdrop;
   }
 
-  // Altezza stabile tra i tab; intestazione e azioni restano fuori dall'area scorrevole.
+  // Keeps the height between tabs, with the header and the actions outside the scrolling area.
   &[open] > :first-child {
     display: flex;
     flex-direction: column;

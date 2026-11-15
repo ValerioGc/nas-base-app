@@ -47,8 +47,8 @@ them to `NasIcon` through `svg`; do not add icon-name registries or wrapper comp
 Use SCSS for style sources and underscores in CSS class names.
 
 Documentation, identifiers, test descriptions and runtime diagnostic messages are in English.
-Keep useful code comments in Italian; explain contracts or non-obvious decisions and remove
-comments that repeat the code. Do not use U+2014.
+Write code comments in English, short, to explain contracts or non-obvious decisions, and remove
+those that repeat the code. Do not use U+2014.
 
 Shared styles are global and loaded through the explicit SCSS entry. Component-specific styles
 can remain scoped and use the shared Sass helpers. When adding classes or elements to a component,
@@ -122,6 +122,30 @@ The package test builds an isolated copy of the source instead of requiring a pr
 it with Compose when absent. `podman:sonar:logs` follows server logs; `podman:sonar:down` stops
 the container without deleting its data. Release scripts do not read, validate or update
 `sonar.properties`; project analysis configuration is managed separately.
+
+## For the applications
+
+Every application installs its dependencies locally with pnpm, while the pipelines install with
+`npm ci` from `package-lock.json`, which therefore has to match `package.json`. `pnpm install`
+realigns it by itself (`postinstall`, which installs nothing with npm). `pnpm add`, `pnpm update`
+and `pnpm remove` do not, so after them run `pnpm run lock:npm`. `pnpm run lint` checks the
+alignment and fails saying so when it is missing, and `release:merge` realigns it anyway before
+publishing. The lockfiles are never edited by hand, `Cargo.lock` changes only through cargo, and
+`pnpm-lock.yaml` stays local.
+
+The launcher bridge, styles, shared components and helpers, and the build, package and release
+scripts of an application come from this library, published on GitHub Packages, and the commands
+of its `package.json` use `nas-base-app`. The `.npmrc` of the application points the `@valeriogc`
+scope to the registry. Locally a classic token with `read:packages` is needed in your own
+`~/.npmrc` (`//npm.pkg.github.com/:_authToken=...`), while the pipelines use the token of the
+workflow. For a new version of the library, update the number in `package.json` and run
+`pnpm install`. The local `pnpm-workspace.yaml` has `'@valeriogc/nas-base-app': false` under
+`allowBuilds`.
+
+The Rust backend of an application takes the check of the launcher on its socket, the takeover of
+a stale socket and the static files of its interface from the crate `nas-app-core`, a Git
+dependency at a tag. A new version reaches an application when it moves the tag in its
+`Cargo.toml` and runs `cargo update -p nas-app-core`.
 
 ## Integration scope
 
