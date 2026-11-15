@@ -2,6 +2,12 @@
 
 All notable changes to @valeriogc/nas-base-app are documented in this file.
 
+## [0.9.3]
+
+### Fixed
+
+- Update comments in English for clarity in DEVELOPMENT.md and _nas-modal.scss.
+
 ## [0.9.2]
 
 ### Changed
